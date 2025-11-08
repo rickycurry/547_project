@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <link rel="stylesheet" href="css/style.css"/>
+    </head>
+    <body>
+        <!-- dropdown menu to change active quant attribute -->
+        <select name="quant-attr" id="quant-attr">
+            <option value="count">Number of candidates</option>
+            <option value="non-male">Non-male</option>
+            <option value="indigenous">Indigenous</option>
+            <option value="age">Average age</option>
+        </select>
+
+        <!-- svg areas for visualizations -->
+        <div class="map"><svg id="choropleth"></svg></div>
+
+        <!-- Tooltips -->
+        <div id="map-tooltip" class="tooltip"></div>
+
+        <!-- Source code -->
+        <script type="module" src="js/choroplethMap.js"></script>
+        <script type="module" src="js/main.js"></script>
+    </body>
+</html>
