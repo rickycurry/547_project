@@ -44,6 +44,11 @@ export class ChoroplethMap {
         this.updateVis();
     }
 
+    changeQuantAttr(attr) {
+        this.quantAttr = attr;
+        this.updateVis();
+    }
+
     initVis() {
         let vis = this;
 
@@ -120,7 +125,28 @@ export class ChoroplethMap {
     initValueMap() {
         let vis = this;
         // Currently, support just one encoding (number of candidates => sequential)
-        vis.valueMap = d3.rollup(vis.filteredCandidates, v => v.length, d => d.fed_id);
+        switch (vis.quantAttr) {
+            case "non-male":
+                vis.valueMap = d3.rollup(vis.filteredCandidates, v => {
+                    const nonMaleCount = v.filter(d => d.gender !== 'M').length;
+                    return nonMaleCount / v.length;
+                },
+                d => d.fed_id);
+                break;
+            case "indigenous":
+                vis.valueMap = d3.rollup(vis.filteredCandidates, v => {
+                    const indigenousCount = v.filter(d => d.indigenousorigins === 1).length;
+                    return indigenousCount / v.length;
+                },
+                d => d.fed_id);
+                break;
+            case "age":
+                vis.valueMap = d3.rollup(vis.filteredCandidates, v => d3.mean(v, d => d.age_at_election), d => d.fed_id);
+                break;
+            case "count":
+            default:
+                vis.valueMap = d3.rollup(vis.filteredCandidates, v => v.length, d => d.fed_id);
+        }
         let min = d3.least(vis.valueMap.values());
         let max = d3.greatest(vis.valueMap.values());
         vis.colourScale = d3.scaleSequential([min, max], vis.colourScheme);

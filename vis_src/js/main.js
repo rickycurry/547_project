@@ -46,8 +46,12 @@ async function main() {
     loadRemainingData(remaining_ro_years).then((values) => {
         ros = values;
         console.log(ros);
-        // choropleth.swapMapData(ros[0]);
     });
 }
 
 main();
+
+const quantAttrDropdown = document.getElementById("quant-attr");
+quantAttrDropdown.addEventListener('change', () => {
+    choropleth.changeQuantAttr(quantAttrDropdown.value);
+});
