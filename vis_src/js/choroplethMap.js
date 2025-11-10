@@ -13,7 +13,7 @@ export class ChoroplethMap {
         this.config = {
             parentElement: _config.parentElement,
             containerWidth: _config.containerWidth || 1100,
-            containerHeight: _config.containerHeight || 800,
+            containerHeight: _config.containerHeight || 700,
             margin: _config.margin || {top: 20, right: 15, bottom: 35, left: 20},
             tooltipPadding: _config.tooltipPadding || 10,
         }
