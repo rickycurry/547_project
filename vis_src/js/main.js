@@ -1,9 +1,10 @@
 import "./external/d3.v7.js";
 import "./external/topojson-client.js";
 import { ChoroplethMap } from "./choroplethMap.js"
+import { TimelineSlider } from "./timelineSlider.js"
 
 let ros, last_ro, candidates;
-let choropleth;
+let choropleth, timelineSlider;
 
 const roRoot = "../data/feds/final/geojson_4326/"
 
@@ -20,7 +21,7 @@ async function loadROData(year) {
 
 async function loadCandidates() {
     candidates = await d3.csv('../data/candidates/candidates_final.csv', d3.autoType);
-    console.log("loaded candidate data");
+    console.log(candidates);
     const ro_years = new Set(d3.map(candidates, d => d.ro));
     return Array.from(ro_years);
 }
@@ -43,6 +44,7 @@ async function loadRemainingData(remaining_ro_years) {
 async function main() {
     let remaining_ro_years = await loadInitialData();
     choropleth = new ChoroplethMap({parentElement: '#choropleth'}, last_ro, candidates);
+    timelineSlider = new TimelineSlider({parentElement: '#slider'}, candidates);
     loadRemainingData(remaining_ro_years).then((values) => {
         ros = values;
         console.log(ros);
