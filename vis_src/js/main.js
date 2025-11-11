@@ -21,7 +21,6 @@ async function loadROData(year) {
 
 async function loadCandidates() {
     candidates = await d3.csv('../data/candidates/candidates_final.csv', d3.autoType);
-    console.log(candidates);
     const ro_years = new Set(d3.map(candidates, d => d.ro));
     return Array.from(ro_years);
 }
@@ -44,10 +43,12 @@ async function loadRemainingData(remaining_ro_years) {
 async function main() {
     let remaining_ro_years = await loadInitialData();
     choropleth = new ChoroplethMap({parentElement: '#choropleth'}, last_ro, candidates);
-    timelineSlider = new TimelineSlider({parentElement: '#slider'}, candidates);
+    timelineSlider = new TimelineSlider({parentElement: '#slider'}, candidates, changeDate);
     loadRemainingData(remaining_ro_years).then((values) => {
         ros = values;
+        ros.push(last_ro);
         console.log(ros);
+        choropleth.assignAllROs(ros);
     });
 }
 
@@ -57,3 +58,7 @@ const quantAttrDropdown = document.getElementById("quant-attr");
 quantAttrDropdown.addEventListener('change', () => {
     choropleth.changeQuantAttr(quantAttrDropdown.value);
 });
+
+function changeDate(newDate) {
+    choropleth.changeDate(newDate);
+}

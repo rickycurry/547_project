@@ -7,8 +7,9 @@ export class TimelineSlider {
     * Class constructor with basic chart configuration
     * @param _config {Object}
     * @param _candidateData {Array}
+    * @param _changeDateCallback {Function}
     */
-    constructor(_config, _candidateData) {
+    constructor(_config, _candidateData, _changeDateCallback) {
         // Configuration object with defaults
         this.config = {
             parentElement: _config.parentElement,
@@ -18,6 +19,7 @@ export class TimelineSlider {
         }
 
         this.candidates = _candidateData;
+        this.changeDateCallback = _changeDateCallback;
         
         this.initVis();
     }
@@ -72,10 +74,8 @@ export class TimelineSlider {
             .marks(vis.electionDates)
             .width(vis.width)
             .tickFormat(d3.utcFormat("%Y"))
-            .tickValues(vis.electionDates);
-        
-        // vis.slider.selectAll()
-            // .on("onchange", () => svg.dispatch("input"));
+            .tickValues(vis.electionDates)
+            .on("onchange", val => vis.changeDateCallback(val));
 
         vis.chart.call(vis.slider);
 

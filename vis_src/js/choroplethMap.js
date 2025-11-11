@@ -21,8 +21,9 @@ export class ChoroplethMap {
         this.currentParliament = _config.currentParliament || 44
         this.currentByElection = _config.currentByElection || 0
 
-        this.data = _geoData; // TODO: rename
         this.candidates = _candidateData;
+        this.ros = [_geoData];
+        this.currentRoIdx = 0;
 
         // this.projection = d3.geoMercator();
         this.projection = d3.geoConicConformal()
@@ -39,14 +40,20 @@ export class ChoroplethMap {
         this.initVis();
     }
 
-    swapMapData(newData) {
-        this.data = newData;
-        this.updateVis();
+    assignAllROs(ros) {
+        this.ros = ros;
+        console.log('All ROs are loaded')
     }
 
     changeQuantAttr(attr) {
         this.quantAttr = attr;
         this.updateVis();
+    }
+
+    changeDate(newDate) {
+        let vis = this;
+        vis.currentParliament = vis.dateParliamentMap.get(newDate.valueOf());
+        vis.updateVis();
     }
 
     initVis() {
@@ -66,13 +73,22 @@ export class ChoroplethMap {
         vis.chart = vis.svg.append('g')
             .classed("chart", true);
 
-        vis.projection.fitExtent([[0, 0], [vis.width, vis.height]], vis.data);
+        vis.projection.fitExtent([[0, 0], [vis.width, vis.height]], vis.ros[vis.currentRoIdx]);
         vis.svg.call(vis.zoom);
         // TODO: figure out how to restrict the pan extents to thsi initial bounds.
         // Possibly d3-zoom.translateExtent?
 
         // This will change in the future depending on which "mode" the map is in
         vis.colourScheme = d3.interpolateBlues;
+
+        vis.dateParliamentMap = new Map();
+        vis.candidates.filter(d => d.type_elxn === 0)
+            .forEach(d => {
+                if (vis.dateParliamentMap.has(d.edate.valueOf())) {
+                    return;
+                }
+                vis.dateParliamentMap.set(d.edate.valueOf(), d.parliament);
+        });
 
         vis.updateVis();
     }
@@ -81,6 +97,7 @@ export class ChoroplethMap {
         let vis = this;
 
         vis.filterCandidates();
+        vis.selectRO();
         vis.initValueMap();
         vis.renderVis();
     }
@@ -89,7 +106,7 @@ export class ChoroplethMap {
         let vis = this;
 
         vis.chart.selectAll("path")
-            .data(vis.data.features)
+            .data(vis.ros[vis.currentRoIdx].features, d => d.fed_id)
             .join("path")
                 .attr("d", vis.path)
                 .attr("debugname", d => d.properties.fedname)
@@ -119,6 +136,19 @@ export class ChoroplethMap {
         }
         else {
             // TODO: implement
+        }
+    }
+
+    selectRO() {
+        let vis = this;
+        vis.currentRoIdx = null;
+        // By now, candidates should be filtered to just one single parliament (and RO)
+        const roYear = vis.filteredCandidates[0].ro.toString();
+        for (const [i, ro] of vis.ros.entries()) {
+            if (ro.name.substring(3) === roYear) {
+                vis.currentRoIdx = i;
+                break;
+            }
         }
     }
 
