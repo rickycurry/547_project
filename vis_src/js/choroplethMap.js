@@ -1,5 +1,8 @@
 import "./external/d3.v7.js"
 
+import {Runtime} from "https://cdn.jsdelivr.net/npm/@observablehq/runtime@4/dist/runtime.js";
+import d3_colorLegend from "https://api.observablehq.com/@d3/color-legend.js?v=3";
+import "./external/d3-color-legend.js"
 
 export class ChoroplethMap {
     /**
@@ -21,7 +24,7 @@ export class ChoroplethMap {
         this.currentParliament = _config.currentParliament || 44
         this.currentByElection = _config.currentByElection || 0
 
-        this.candidates = _candidateData;
+        this.candidatesGroupedByParliament = d3.group(_candidateData, d => d.parliament);
         this.ros = [_geoData];
         this.currentRoIdx = 0;
 
@@ -75,19 +78,15 @@ export class ChoroplethMap {
 
         vis.projection.fitExtent([[0, 0], [vis.width, vis.height]], vis.ros[vis.currentRoIdx]);
         vis.svg.call(vis.zoom);
-        // TODO: figure out how to restrict the pan extents to thsi initial bounds.
+        // TODO: figure out how to restrict the pan extents to this initial bounds.
         // Possibly d3-zoom.translateExtent?
 
-        // This will change in the future depending on which "mode" the map is in
+        // This will change in the future depending on which "mode" the map is in, perhaps
         vis.colourScheme = d3.interpolateBlues;
 
         vis.dateParliamentMap = new Map();
-        vis.candidates.filter(d => d.type_elxn === 0)
-            .forEach(d => {
-                if (vis.dateParliamentMap.has(d.edate.valueOf())) {
-                    return;
-                }
-                vis.dateParliamentMap.set(d.edate.valueOf(), d.parliament);
+        vis.candidatesGroupedByParliament.forEach((candidates, parliament) => {
+            vis.dateParliamentMap.set(candidates[0].edate.valueOf(), parliament);
         });
 
         vis.updateVis();
@@ -119,6 +118,9 @@ export class ChoroplethMap {
                     .html(`<div class="tooltip-title">${d.properties.fedname}</div>`);
             })
             .on('mouseleave', () => { d3.select('#map-tooltip').style('display', 'none'); });
+
+        // TODO: get legend working. Probably need to create my own class for it...
+        // renderLegend(vis.chart, vis.colourScale);
     }
 
     zoomed(event) {
@@ -130,7 +132,7 @@ export class ChoroplethMap {
     filterCandidates() {
         // We only want to update the FEDs that changed in the by-election cycle.
         let vis = this;
-        vis.filteredCandidates = vis.candidates.filter(d => d.parliament === vis.currentParliament);
+        vis.filteredCandidates = vis.candidatesGroupedByParliament.get(vis.currentParliament);
         if (vis.currentByElection === 0) {
             vis.filteredCandidates = vis.filteredCandidates.filter(d => d.type_elxn === vis.currentByElection);
         }
@@ -141,7 +143,7 @@ export class ChoroplethMap {
 
     selectRO() {
         let vis = this;
-        vis.currentRoIdx = null;
+        vis.currentRoIdx = 0;
         // By now, candidates should be filtered to just one single parliament (and RO)
         const roYear = vis.filteredCandidates[0].ro.toString();
         for (const [i, ro] of vis.ros.entries()) {
@@ -188,4 +190,9 @@ export class ChoroplethMap {
         const value = vis.valueMap.get(idInt);
         return vis.colourScale(value);
     }
+}
+
+async function renderLegend(el, colourScale) {
+    const legend = Legend(colourScale, {title: 'Test legend'});
+    console.log(legend);
 }
