@@ -6,16 +6,9 @@ import { TimelineSlider } from "./timelineSlider.js"
 let ros, last_ro, candidates;
 let choropleth, timelineSlider;
 
-const roRoot = "../data/feds/final/geojson_4326/"
+const roRoot = "../data/feds/mapshaper_simplified_rewound_4326/"
 
 async function loadROData(year) {
-    // const rawTopoData = await d3.json('../data/feds/final/topojson_4326/ro_1952.json');
-    // console.log("loaded test geojson")
-    // test_ro = {}
-    // Object.keys(rawTopoData.objects).forEach(key => {
-    //     test_ro[key] = topojson.feature(rawTopoData, key);
-    // });
-    // console.log(test_ro);
     return d3.json(`${roRoot}ro_${year}.geojson`);
 }
 
