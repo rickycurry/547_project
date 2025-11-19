@@ -10,8 +10,9 @@ export class ChoroplethMap {
     * @param _config {Object}
     * @param _geoData {Array}
     * @param _candidateData {Array}
+    * @param _majorPartiesLookup {Array}
     */
-    constructor(_config, _geoData, _candidateData) {
+    constructor(_config, _geoData, _candidateData, _majorPartiesLookup) {
         // Configuration object with defaults
         this.config = {
             parentElement: _config.parentElement,
@@ -26,6 +27,7 @@ export class ChoroplethMap {
 
         this.candidatesGroupedByParliament = d3.group(_candidateData, d => d.parliament);
         this.ros = [_geoData];
+        this.majorPartiesLookup = _majorPartiesLookup;
         this.currentRoIdx = 0;
 
         // this.projection = d3.geoMercator();
@@ -39,6 +41,8 @@ export class ChoroplethMap {
         this.zoom = d3.zoom()
             .scaleExtent([1, 20])
             .on("zoom", this.zoomed);
+
+        this.tooltipBodyFn = d => "";
         
         this.initVis();
     }
@@ -115,7 +119,8 @@ export class ChoroplethMap {
                     .style('display', 'block')
                     .style('left', (event.pageX + vis.config.tooltipPadding) + 'px')
                     .style('bottom', (window.innerHeight - event.pageY + vis.config.tooltipPadding) + 'px')
-                    .html(`<div class="tooltip-title">${d.properties.fedname}</div>`);
+                    .html(`<div class="tooltip-title">${d.properties.fedname}</div>
+                           <div class="tooltip-body">${vis.tooltipBodyFn(d)}`);
             })
             .on('mouseleave', () => { d3.select('#map-tooltip').style('display', 'none'); });
 
@@ -158,26 +163,62 @@ export class ChoroplethMap {
         let vis = this;
         // Currently, support just one encoding (number of candidates => sequential)
         switch (vis.quantAttr) {
+            case "margin":
+                vis.valueMap = d3.rollup(vis.filteredCandidates, v => {
+                        if (v.length <= 1) {
+                            return null;
+                        }
+                        v.sort((a, b) => a.percent_votes - b.percent_votes);
+                        return v[v.length - 1].percent_votes - v[v.length - 2].percent_votes;
+                    }, 
+                    d => d.fed_id);
+                break;
+
             case "non-male":
                 vis.valueMap = d3.rollup(vis.filteredCandidates, v => {
-                    const nonMaleCount = v.filter(d => d.gender !== 'M').length;
-                    return nonMaleCount / v.length;
-                },
-                d => d.fed_id);
+                        const nonMaleCount = v.filter(d => d.gender !== 'M').length;
+                        return nonMaleCount / v.length;
+                    },
+                    d => d.fed_id);
+                vis.tooltipBodyFn = d => {
+                    const nonMaleProportion = vis.valueMap.get(parseInt(d.properties.id));
+                    return `${Math.round(nonMaleProportion * 100)}% non-male`;
+                }
                 break;
+                
             case "indigenous":
                 vis.valueMap = d3.rollup(vis.filteredCandidates, v => {
-                    const indigenousCount = v.filter(d => d.indigenousorigins === 1).length;
-                    return indigenousCount / v.length;
-                },
-                d => d.fed_id);
+                        const indigenousCount = v.filter(d => d.indigenousorigins === 1).length;
+                        return indigenousCount / v.length;
+                    },
+                    d => d.fed_id);
                 break;
+
             case "age":
                 vis.valueMap = d3.rollup(vis.filteredCandidates, v => d3.mean(v, d => d.age_at_election), d => d.fed_id);
                 break;
+
             case "count":
-            default:
                 vis.valueMap = d3.rollup(vis.filteredCandidates, v => v.length, d => d.fed_id);
+                break;
+
+            case "outcome":
+            default:
+                vis.valueMap = d3.rollup(vis.filteredCandidates, v => {
+                    const winners = v.filter(d => d.elected === 1);
+                    if (winners.length > 0) {
+                        // TODO: can we deal with multi-seat FEDS somehow?
+                        return winners[0].party_major_group_cleaned;
+                    } else {
+                        return null;
+                    }
+                },
+                d => d.fed_id);
+                vis.colourScale = d3.scaleOrdinal(
+                    vis.majorPartiesLookup.map(d => d.id),
+                    vis.majorPartiesLookup.map(d => d.colour)
+                ).unknown('#000');
+                return
         }
         let min = d3.least(vis.valueMap.values());
         let max = d3.greatest(vis.valueMap.values());
