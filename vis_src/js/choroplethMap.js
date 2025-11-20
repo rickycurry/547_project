@@ -2,7 +2,7 @@ import "./external/d3.v7.js"
 
 import {Runtime} from "https://cdn.jsdelivr.net/npm/@observablehq/runtime@4/dist/runtime.js";
 import d3_colorLegend from "https://api.observablehq.com/@d3/color-legend.js?v=3";
-import "./external/d3-color-legend.js"
+// import "./external/d3-color-legend.js"
 
 export class ChoroplethMap {
     /**
