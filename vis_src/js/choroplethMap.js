@@ -11,8 +11,9 @@ export class ChoroplethMap {
     * @param _geoData {Array}
     * @param _candidateData {Array}
     * @param _majorPartiesLookup {Array}
+    * @param _rawPartiesLookup {Array}
     */
-    constructor(_config, _geoData, _candidateData, _majorPartiesLookup) {
+    constructor(_config, _geoData, _candidateData, _majorPartiesLookup, _rawPartiesLookup) {
         // Configuration object with defaults
         this.config = {
             parentElement: _config.parentElement,
@@ -28,6 +29,8 @@ export class ChoroplethMap {
         this.candidatesGroupedByParliament = d3.group(_candidateData, d => d.parliament);
         this.ros = [_geoData];
         this.majorPartiesLookup = _majorPartiesLookup;
+        this.rawPartiesLookup = new Map();
+        _rawPartiesLookup.forEach(d => this.rawPartiesLookup.set(d.id, d.party));
         this.currentRoIdx = 0;
 
         // this.projection = d3.geoMercator();
@@ -109,7 +112,7 @@ export class ChoroplethMap {
         let vis = this;
 
         vis.chart.selectAll("path")
-            .data(vis.ros[vis.currentRoIdx].features, d => d.fed_id)
+            .data(vis.ros[vis.currentRoIdx].features, d => d.properties.fedname)
             .join("path")
                 .attr("d", vis.path)
                 .attr("debugname", d => d.properties.fedname)
@@ -161,17 +164,25 @@ export class ChoroplethMap {
 
     initValueMap() {
         let vis = this;
-        // Currently, support just one encoding (number of candidates => sequential)
+
         switch (vis.quantAttr) {
             case "margin":
                 vis.valueMap = d3.rollup(vis.filteredCandidates, v => {
                         if (v.length <= 1) {
                             return null;
                         }
-                        v.sort((a, b) => a.percent_votes - b.percent_votes);
-                        return v[v.length - 1].percent_votes - v[v.length - 2].percent_votes;
+                        v.sort((a, b) => b.percent_votes - a.percent_votes);
+                        return v[0].percent_votes - v[1].percent_votes;
                     }, 
                     d => d.fed_id);
+                vis.tooltipBodyFn = d => {
+                    const fedIdInt = parseInt(d.properties.id);
+                    const fedCandidates = vis.filteredCandidates.filter(c => c.fed_id === fedIdInt);
+                    fedCandidates.sort((a, b) => b.percent_votes - a.percent_votes);
+                    const margin = `Margin of victory: ${Math.round(vis.valueMap.get(fedIdInt))}%`;
+                    const candidateStrings = fedCandidates.map(c => `${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)}) — ${Math.round(c.percent_votes)}%`);
+                    return margin + '\n' + candidateStrings.join('\n');
+                };
                 break;
 
             case "non-male":
@@ -181,9 +192,14 @@ export class ChoroplethMap {
                     },
                     d => d.fed_id);
                 vis.tooltipBodyFn = d => {
-                    const nonMaleProportion = vis.valueMap.get(parseInt(d.properties.id));
-                    return `${Math.round(nonMaleProportion * 100)}% non-male`;
-                }
+                    const fedIdInt = parseInt(d.properties.id);
+                    const fedCandidates = vis.filteredCandidates.filter(c => c.fed_id === fedIdInt);
+                    const candidateStrings = fedCandidates.map(c => {
+                        return c.gender === 'M' ? `${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)}) — ${c.gender}` 
+                                                : `<b>${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)}) — ${c.gender}</b>`
+                    });
+                    return candidateStrings.join('\n');
+                };
                 break;
                 
             case "indigenous":
@@ -192,32 +208,58 @@ export class ChoroplethMap {
                         return indigenousCount / v.length;
                     },
                     d => d.fed_id);
+                vis.tooltipBodyFn = d => {
+                    const fedIdInt = parseInt(d.properties.id);
+                    const fedCandidates = vis.filteredCandidates.filter(c => c.fed_id === fedIdInt);
+                    const candidateStrings = fedCandidates.map(c => {
+                        return c.indigenousorigins ? `<b>${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)})</b>` : `${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)})`;
+                    });
+                    return candidateStrings.join('\n');
+                };
                 break;
 
             case "age":
                 vis.valueMap = d3.rollup(vis.filteredCandidates, v => d3.mean(v, d => d.age_at_election), d => d.fed_id);
+                vis.tooltipBodyFn = d => {
+                    // NOTE: we basically only have age data for winners, not all candidates!
+                    const fedIdInt = parseInt(d.properties.id);
+                    const fedCandidates = vis.filteredCandidates.filter(c => c.fed_id === fedIdInt);
+                    const candidateStrings = fedCandidates.map(c => `${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)}) — ${isNaN(c.age_at_election) ? "unknown" : c.age_at_election}`);
+                    return candidateStrings.join('\n');
+                };
                 break;
 
             case "count":
                 vis.valueMap = d3.rollup(vis.filteredCandidates, v => v.length, d => d.fed_id);
+                vis.tooltipBodyFn = d => {
+                    const fedIdInt = parseInt(d.properties.id);
+                    const fedCandidates = vis.filteredCandidates.filter(c => c.fed_id === fedIdInt);
+                    const candidateCountStr = `${fedCandidates.length} candidates\n• `
+                    const candidateStrings = fedCandidates.map(c => `${c.elected ? '<b>' : ''}${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)})${c.elected ? '</b>' : ''}`);
+                    return candidateCountStr + candidateStrings.join('\n• ');
+                };
                 break;
 
             case "outcome":
             default:
                 vis.valueMap = d3.rollup(vis.filteredCandidates, v => {
-                    const winners = v.filter(d => d.elected === 1);
-                    if (winners.length > 0) {
+                        const winners = v.filter(d => d.elected === 1);
                         // TODO: can we deal with multi-seat FEDS somehow?
-                        return winners[0].party_major_group_cleaned;
-                    } else {
-                        return null;
-                    }
-                },
-                d => d.fed_id);
+                        return winners.length > 0 ? winners[0].party_major_group_cleaned : null;
+                    },
+                    d => d.fed_id);
                 vis.colourScale = d3.scaleOrdinal(
                     vis.majorPartiesLookup.map(d => d.id),
-                    vis.majorPartiesLookup.map(d => d.colour)
-                ).unknown('#000');
+                    vis.majorPartiesLookup.map(d => d.colour))
+                    .unknown('#000');
+                vis.tooltipBodyFn = d => {
+                    const fedIdInt = parseInt(d.properties.id);
+                    const fedCandidates = vis.filteredCandidates.filter(c => c.fed_id === fedIdInt);
+                    fedCandidates.sort((a, b) => b.percent_votes - a.percent_votes);
+                    const candidateStrings = fedCandidates.map(c => `${c.elected ? '<b>' : ''}${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)}) — ${Math.round(c.percent_votes)}%${c.elected ? '</b>' : ''}`);
+                    return candidateStrings.join('\n');
+                };
+                // Early out here so we don't set the sequential colour scale below
                 return
         }
         let min = d3.least(vis.valueMap.values());

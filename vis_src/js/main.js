@@ -3,7 +3,7 @@ import "./external/topojson-client.js";
 import { ChoroplethMap } from "./choroplethMap.js"
 import { TimelineSlider } from "./timelineSlider.js"
 
-let ros, lastRo, candidates, partiesMajor;
+let ros, lastRo, candidates, partiesMajor, partiesRaw;
 let choropleth, timelineSlider;
 
 const roRoot = "../data/feds/mapshaper_simplified_rewound_4326/"
@@ -23,6 +23,7 @@ async function loadInitialData() {
     // Load the latest RO first
     lastRo = await loadROData(ro_years.pop());
     partiesMajor = await d3.csv('../data/candidates/lookup_tables/parties_major.csv', d3.autoType);
+    partiesRaw = await d3.csv('../data/candidates/lookup_tables/parties_raw.csv', d3.autoType);
     return ro_years;
 }
 
@@ -36,7 +37,7 @@ async function loadRemainingData(remaining_ro_years) {
 
 async function main() {
     let remaining_ro_years = await loadInitialData();
-    choropleth = new ChoroplethMap({parentElement: '#choropleth'}, lastRo, candidates, partiesMajor);
+    choropleth = new ChoroplethMap({parentElement: '#choropleth'}, lastRo, candidates, partiesMajor, partiesRaw);
     timelineSlider = new TimelineSlider({parentElement: '#slider'}, candidates, changeDate);
     loadRemainingData(remaining_ro_years).then((values) => {
         ros = values;
