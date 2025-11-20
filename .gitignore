@@ -1,4 +1,8 @@
 **/.DS_Store
 **.pyc
-data
+data/*
+!data/candidates/
+data/candidates/candidate_data_cleaned.csv
+!data/feds
+
 data_processing/logs/
