@@ -40,7 +40,7 @@ async function main() {
     let remaining_ro_years = await loadInitialData();
     choropleth = new ChoroplethMap({parentElement: '#choropleth'}, lastRo, candidates, partiesMajor, partiesRaw);
     timelineSlider = new TimelineSlider({parentElement: '#slider'}, candidates, changeDate);
-    barPlot = new Barplot({parentElement: '#barplot'}, candidates);
+    barPlot = new Barplot({parentElement: '#barplot'}, candidates, partiesMajor);
     loadRemainingData(remaining_ro_years).then((values) => {
         ros = values;
         ros.push(lastRo);
