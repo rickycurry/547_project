@@ -38,9 +38,9 @@ async function loadRemainingData(remaining_ro_years) {
 
 async function main() {
     let remaining_ro_years = await loadInitialData();
-    choropleth = new ChoroplethMap({parentElement: '#choropleth'}, lastRo, candidates, partiesMajor, partiesRaw);
-    timelineSlider = new TimelineSlider({parentElement: '#slider'}, candidates, changeDate);
-    barPlot = new Barplot({parentElement: '#barplot'}, candidates, partiesMajor);
+    choropleth = new ChoroplethMap({parentElement: '#choropleth-upper'}, lastRo, candidates, partiesMajor, partiesRaw);
+    timelineSlider = new TimelineSlider({parentElement: '#slider-upper'}, candidates, changeDate);
+    barPlot = new Barplot({parentElement: '#barplot-upper'}, candidates, partiesMajor);
     loadRemainingData(remaining_ro_years).then((values) => {
         ros = values;
         ros.push(lastRo);
