@@ -53,6 +53,7 @@ main();
 const quantAttrDropdown = document.getElementById("quant-attr");
 quantAttrDropdown.addEventListener('change', () => {
     choropleth.changeQuantAttr(quantAttrDropdown.value);
+    barPlot.changeQuantAttr(quantAttrDropdown.value);
 });
 
 function changeDate(newDate) {
