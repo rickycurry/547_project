@@ -13,9 +13,9 @@ export class TimelineSlider {
         // Configuration object with defaults
         this.config = {
             parentElement: _config.parentElement,
-            containerWidth: _config.containerWidth || 1400,
-            containerHeight: _config.containerHeight || 80,
-            margin: _config.margin || {top: 10, right: 30, bottom: 10, left: 30},
+            minSize: _config.minSize || {height: 66, width: 1800},
+            margin: _config.margin || {top: 40, right: 30, bottom: 5, left: 30},
+            isUpper: _config.isUpper || false,
         }
 
         this.candidates = _candidateData;
@@ -41,21 +41,23 @@ export class TimelineSlider {
             vis.electionDates.push(d.edate);
             crudeDateSet.add(crudeString);
         });
-        
-        // Calculate inner chart size. Margin specifies the space around the actual chart.
-        vis.width = vis.config.containerWidth - vis.config.margin.left - vis.config.margin.right;
-        vis.height = vis.config.containerHeight - vis.config.margin.top - vis.config.margin.bottom;
+
+        const sliderDiv = document.getElementById(vis.config.parentElement);
+        vis.width = sliderDiv.offsetWidth - vis.config.margin.left - vis.config.margin.right;
+        vis.height = sliderDiv.offsetHeight - vis.config.margin.top - vis.config.margin.bottom;
 
         // Define size of SVG drawing area
-        vis.svg = d3.select(vis.config.parentElement)
-            .attr('width', vis.config.containerWidth)
-            .attr('height', vis.config.containerHeight);
-            // .attr("style", "max-width: 100%; height: auto;");
+        vis.svg = d3.select(`#${vis.config.parentElement}`)
+            .append('svg')
+            .attr('width', '100%')
+            .attr('height', '100%')
+            // .attr('viewBox', [0, 0, vis.width, vis.height]);
+            .attr('viewBox', [-vis.config.margin.left, -vis.config.margin.top, sliderDiv.offsetWidth, sliderDiv.offsetHeight]);
 
         // SVG Group containing the actual chart
-        vis.chart = vis.svg.append('g')
-            .classed("chart", true)
-            .attr('transform', `translate(${vis.config.margin.left},${vis.config.margin.right})`);
+        // vis.chart = vis.svg.append('g')
+        //     .classed("chart", true)
+        //     .attr('transform', `translate(${vis.config.margin.left},${vis.config.margin.top})`);
 
         vis.updateVis();
     }
@@ -67,22 +69,24 @@ export class TimelineSlider {
 
     renderVis() {
         let vis = this;
-        vis.slider = d3.sliderBottom()
+        vis.slider = vis.config.isUpper ? d3.sliderTop() : d3.sliderBottom();
+        vis.slider
             .min(d3.min(vis.electionDates))
             .max(d3.max(vis.electionDates))
             .default(d3.max(vis.electionDates))
             .marks(vis.electionDates)
             .width(vis.width)
+            .height(vis.height)
             .tickFormat(d3.utcFormat("%Y"))
             .tickValues(vis.electionDates)
             .on("onchange", val => vis.changeDateCallback(val));
 
-        vis.chart.call(vis.slider);
+        vis.svg.call(vis.slider);
 
-        d3.selectAll('text')
-            .style('text-anchor', 'end')
-            .attr("dx", "-1.1em")
-            .attr("dy", "-0.8em")
-            .attr('transform', "rotate(-65)");
+        // d3.selectAll('text')
+        //     .style('text-anchor', 'end')
+        //     .attr("dx", "-1.1em")
+        //     .attr("dy", "-0.8em")
+        //     .attr('transform', "rotate(-65)");
     }
 }

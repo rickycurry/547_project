@@ -11,9 +11,9 @@ export class Barplot {
         // Configuration object with defaults
         this.config = {
             parentElement: _config.parentElement,
-            containerWidth: _config.containerWidth || 600,
-            containerHeight: _config.containerHeight || 480,
-            margin: _config.margin || {top: 30, right: 10, bottom: 50, left: 35},
+            // containerWidth: _config.containerWidth || 600,
+            // containerHeight: _config.containerHeight || 480,
+            margin: _config.margin || {top: 10, right: 10, bottom: 80, left: 30},
         }
 
         this.candidates = _candidateData;
@@ -26,9 +26,9 @@ export class Barplot {
         let vis = this;
         vis.candidates = vis.candidates.filter(d => d.type_elxn === 0);
 
-        // Calculate inner chart size. Margin specifies the space around the actual chart.
-        vis.width = vis.config.containerWidth - vis.config.margin.left - vis.config.margin.right;
-        vis.height = vis.config.containerHeight - vis.config.margin.top - vis.config.margin.bottom;
+        const barplotDiv = document.getElementById(vis.config.parentElement);
+        vis.width = barplotDiv.offsetWidth - vis.config.margin.left - vis.config.margin.right;
+        vis.height = barplotDiv.offsetHeight - vis.config.margin.top - vis.config.margin.bottom;
 
         // Initialize scales
         vis.yScale = d3.scaleLinear()
@@ -46,9 +46,12 @@ export class Barplot {
         vis.yAxis = d3.axisLeft(vis.yScale)
             .tickSizeOuter(0);
 
-        vis.svg = d3.select(vis.config.parentElement)
-            .attr('width', vis.config.containerWidth)
-            .attr('height', vis.config.containerHeight);
+        vis.svg = d3.select(`#${vis.config.parentElement}`)
+            .append('svg')
+            .attr('width', '100%')
+            .attr('height', '100%')
+            .attr('viewBox', [0, 0, vis.width, vis.height]);
+
         vis.chart = vis.svg.append('g')
             .classed("chart", true)
             .attr('transform', `translate(${vis.config.margin.left},${vis.config.margin.top})`);

@@ -4,48 +4,38 @@
         <link rel="stylesheet" href="css/style.css"/>
     </head>
     <body>
+        <!-- svg areas for visualizations -->
+        <div class="wrapper">
+            <!-- Upper section: sliders and heatmap -->
+            <div class="slider" id="sliderdiv-upper"></div>
+            <div class="heatmap" id="heatmapdiv"></div>
+            <div class="slider" id="sliderdiv-lower"></div>
+
+            <!-- Middle: upper map and bar plot -->
+            <div class="map" id="choroplethdiv-upper"></div>
+            <div class="barplot" id="barplotdiv-upper"></div>
+
+            <!-- Lower: lower map and bar plot -->
+            <div class="map" id="choroplethdiv-lower"></div>
+            <div class="barplot" id="barplotdiv-lower"></div>
+
+            <!-- Lower: lower map and bar plot -->
+            <!-- <div class="map">
+                <svg id="choropleth-lower"></svg>
+            </div>
+            <div class="barplot">
+                <svg id="barplot-lower"></svg>
+            </div> -->
+        </div>
         <!-- dropdown menu to change active quant attribute -->
-        <select name="quant-attr" id="quant-attr">
+        <!-- <select name="quant-attr" id="quant-attr">
             <option value="outcome">Election outcome</option>
             <option value="count">Number of candidates</option>
             <option value="non-male">Non-male</option>
             <option value="indigenous">Indigenous</option>
             <option value="age">Average age</option>
             <option value="margin">Margin of victory</option>
-        </select>
-
-        <!-- svg areas for visualizations -->
-        <div class="wrapper">
-            <!-- Upper section: sliders and heatmap -->
-            <div class="slider" id="sliderdiv-upper">
-                <svg id="slider-upper"></svg>
-            </div>
-            <div class="heatmap" id="heatmapdiv">
-                <svg id="heatmap"></svg>
-            </div>
-            <div class="slider" id="sliderdiv-lower">
-                <svg id="slider-lower"></svg>
-            </div>
-
-            <!-- Middle: upper map and bar plot -->
-            <div class="map">
-                <svg id="choropleth-upper"></svg>
-            </div>
-            <div class="barplot">
-                <svg id="barplot-upper"></svg>
-            </div>
-
-            <!-- Lower: lower map and bar plot -->
-            <div class="map">
-                <svg id="choropleth-lower"></svg>
-            </div>
-            <div class="barplot">
-                <svg id="barplot-lower"></svg>
-            </div>
-        </div>
-
-        
-        
+        </select> -->
 
         <!-- Tooltips -->
         <div id="map-tooltip" class="tooltip"></div>

@@ -17,9 +17,9 @@ export class ChoroplethMap {
         // Configuration object with defaults
         this.config = {
             parentElement: _config.parentElement,
-            containerWidth: _config.containerWidth || 1100,
-            containerHeight: _config.containerHeight || 700,
-            margin: _config.margin || {top: 20, right: 15, bottom: 35, left: 20},
+            // containerWidth: _config.containerWidth || 1100,
+            // containerHeight: _config.containerHeight || 700,
+            margin: _config.margin || {top: 10, right: 10, bottom: 10, left: 10},
             tooltipPadding: _config.tooltipPadding || 10,
         }
 
@@ -42,8 +42,8 @@ export class ChoroplethMap {
             .projection(this.projection);
         
         this.zoom = d3.zoom()
-            .scaleExtent([1, 20])
-            .on("zoom", this.zoomed);
+            .scaleExtent([1, 40])
+            .on("zoom", (event) => this.zoomed(event, this.chart));
 
         this.tooltipBodyFn = d => "";
         
@@ -69,19 +69,31 @@ export class ChoroplethMap {
     initVis() {
         let vis = this;
 
-        // Calculate inner chart size. Margin specifies the space around the actual chart.
-        vis.width = vis.config.containerWidth - vis.config.margin.left - vis.config.margin.right;
-        vis.height = vis.config.containerHeight - vis.config.margin.top - vis.config.margin.bottom;
+        const sliderDiv = document.getElementById(vis.config.parentElement);
+        vis.width = sliderDiv.offsetWidth - vis.config.margin.left - vis.config.margin.right;
+        vis.height = sliderDiv.offsetHeight - vis.config.margin.top - vis.config.margin.bottom;
 
         // Define size of SVG drawing area
-        vis.svg = d3.select(vis.config.parentElement)
-            .attr('width', vis.config.containerWidth)
-            .attr('height', vis.config.containerHeight)
-            .attr("style", "max-width: 100%; height: auto;");
+        vis.svg = d3.select(`#${vis.config.parentElement}`)
+            .append('svg')
+            .attr('width', '100%')
+            .attr('height', '100%')
+            .attr('viewBox', [0, 0, vis.width, vis.height]);
+
+        // // Calculate inner chart size. Margin specifies the space around the actual chart.
+        // vis.width = vis.config.containerWidth - vis.config.margin.left - vis.config.margin.right;
+        // vis.height = vis.config.containerHeight - vis.config.margin.top - vis.config.margin.bottom;
+
+        // // Define size of SVG drawing area
+        // vis.svg = d3.select(vis.config.parentElement)
+        //     .attr('width', vis.config.containerWidth)
+        //     .attr('height', vis.config.containerHeight)
+        //     .attr("style", "max-width: 100%; height: auto;");
 
         // SVG Group containing the actual chart
         vis.chart = vis.svg.append('g')
-            .classed("chart", true);
+            .classed("chart", true)
+            .attr('transform', `translate(${vis.config.margin.left},${vis.config.margin.top})`);;
 
         vis.projection.fitExtent([[0, 0], [vis.width, vis.height]], vis.ros[vis.currentRoIdx]);
         vis.svg.call(vis.zoom);
@@ -131,10 +143,9 @@ export class ChoroplethMap {
         // renderLegend(vis.chart, vis.colourScale);
     }
 
-    zoomed(event) {
+    zoomed(event, svg) {
         const {transform} = event;
-        d3.select('.chart')
-            .attr("transform", transform);
+        svg.attr("transform", transform);
     }
 
     filterCandidates() {

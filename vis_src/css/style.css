@@ -1,7 +1,15 @@
+html, body {
+    /* height: 100%;
+    width: 100%; */
+    overflow: hidden;
+}
+
 .wrapper {
     display: grid;
+    width: 99vw;
+    height: 99vh;
     grid-template-columns: 65% 35%;
-    grid-template-rows: 8% 20% 8% 32% 32%
+    grid-template-rows: 6% 20% 6% 34% 34%
 }
 
 .slider {
@@ -13,6 +21,8 @@
 
 div {
     white-space: pre-wrap;
+    float:left;
+    clear:none;  
 }
 
 /* Tooltips */
