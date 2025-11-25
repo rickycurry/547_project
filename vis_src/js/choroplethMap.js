@@ -17,8 +17,6 @@ export class ChoroplethMap {
         // Configuration object with defaults
         this.config = {
             parentElement: _config.parentElement,
-            // containerWidth: _config.containerWidth || 1100,
-            // containerHeight: _config.containerHeight || 700,
             margin: _config.margin || {top: 10, right: 10, bottom: 10, left: 10},
             tooltipPadding: _config.tooltipPadding || 10,
         }
@@ -79,16 +77,6 @@ export class ChoroplethMap {
             .attr('width', '100%')
             .attr('height', '100%')
             .attr('viewBox', [0, 0, vis.width, vis.height]);
-
-        // // Calculate inner chart size. Margin specifies the space around the actual chart.
-        // vis.width = vis.config.containerWidth - vis.config.margin.left - vis.config.margin.right;
-        // vis.height = vis.config.containerHeight - vis.config.margin.top - vis.config.margin.bottom;
-
-        // // Define size of SVG drawing area
-        // vis.svg = d3.select(vis.config.parentElement)
-        //     .attr('width', vis.config.containerWidth)
-        //     .attr('height', vis.config.containerHeight)
-        //     .attr("style", "max-width: 100%; height: auto;");
 
         // SVG Group containing the actual chart
         vis.chart = vis.svg.append('g')

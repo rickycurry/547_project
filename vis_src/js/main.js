@@ -5,7 +5,11 @@ import { TimelineSlider } from "./timelineSlider.js"
 import { Barplot } from "./barplot.js"
 
 let ros, lastRo, candidates, partiesMajor, partiesRaw;
-let choropleth, timelineSliderUpper, timelineSliderLower, barPlot;
+let choroplethUpper, choroplethLower;
+let timelineSliderUpper, timelineSliderLower;
+let barPlotUpper, barPlotLower;
+let heatmap;
+let dispatch;
 
 const roRoot = "../data/feds/mapshaper_simplified_rewound_4326/";
 
@@ -38,14 +42,16 @@ async function loadRemainingData(remaining_ro_years) {
 
 async function main() {
     let remaining_ro_years = await loadInitialData();
-    timelineSliderUpper = new TimelineSlider({parentElement: 'sliderdiv-upper', isUpper: true, margin: {top: 40, right: 30, bottom: 5, left: 30}}, candidates, changeDate);
-    timelineSliderLower = new TimelineSlider({parentElement: 'sliderdiv-lower', isUpper: false, margin: {top: 5, right: 30, bottom: 30, left: 30}}, candidates, changeDate);
-    choropleth = new ChoroplethMap({parentElement: 'choroplethdiv-upper'}, lastRo, candidates, partiesMajor, partiesRaw);
-    barPlot = new Barplot({parentElement: 'barplotdiv-upper'}, candidates, partiesMajor);
+    choroplethUpper = new ChoroplethMap({parentElement: 'choroplethdiv-upper'}, lastRo, candidates, partiesMajor, partiesRaw);
+    choroplethLower = new ChoroplethMap({parentElement: 'choroplethdiv-lower'}, lastRo, candidates, partiesMajor, partiesRaw);
+    timelineSliderUpper = new TimelineSlider({parentElement: 'sliderdiv-upper', isUpper: true, margin: {top: 40, right: 30, bottom: 5, left: 30}}, candidates, changeDate.bind(choroplethUpper));
+    timelineSliderLower = new TimelineSlider({parentElement: 'sliderdiv-lower', isUpper: false, margin: {top: 5, right: 30, bottom: 30, left: 30}}, candidates, changeDate.bind(choroplethLower));
+    barPlotUpper = new Barplot({parentElement: 'barplotdiv-upper'}, candidates, partiesMajor);
+    barPlotLower = new Barplot({parentElement: 'barplotdiv-lower'}, candidates, partiesMajor);
     loadRemainingData(remaining_ro_years).then((values) => {
         ros = values;
         ros.push(lastRo);
-        choropleth.assignAllROs(ros);
+        choroplethUpper.assignAllROs(ros);
     });
 }
 
@@ -57,5 +63,5 @@ main();
 // });
 
 function changeDate(newDate) {
-    choropleth.changeDate(newDate);
+    this.changeDate(newDate);
 }
