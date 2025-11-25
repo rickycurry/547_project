@@ -25,11 +25,11 @@ export class ChoroplethMap {
         this.currentByElection = _config.currentByElection || 0
 
         this.candidatesGroupedByParliament = d3.group(_candidateData, d => d.parliament);
-        this.ros = [_geoData];
+        this.ros = _geoData;
         this.majorPartiesLookup = _majorPartiesLookup;
         this.rawPartiesLookup = new Map();
         _rawPartiesLookup.forEach(d => this.rawPartiesLookup.set(d.id, d.party));
-        this.currentRoIdx = 0;
+        this.currentRoIdx = 17;
 
         // this.projection = d3.geoMercator();
         this.projection = d3.geoConicConformal()
@@ -46,11 +46,6 @@ export class ChoroplethMap {
         this.tooltipBodyFn = d => "";
         
         this.initVis();
-    }
-
-    assignAllROs(ros) {
-        this.ros = ros;
-        console.log('All ROs are loaded')
     }
 
     changeQuantAttr(attr) {
