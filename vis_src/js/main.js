@@ -30,17 +30,13 @@ async function loadData() {
 }
 
 async function loadROs(ro_years) {
-    const ro_promises = [];
-    ro_years.forEach(ro => {
-        ro_promises.push(loadROData(ro));
-    });
-    return Promise.all(ro_promises);
+    return Promise.all(ro_years.map(loadROData));
 }
 
 async function main() {
     await loadData();
-    choroplethUpper = new ChoroplethMap({parentElement: 'choroplethdiv-upper'}, ros, candidates, partiesMajor, partiesRaw);
-    choroplethLower = new ChoroplethMap({parentElement: 'choroplethdiv-lower'}, ros, candidates, partiesMajor, partiesRaw);
+    choroplethUpper = new ChoroplethMap({parentElement: 'choroplethdiv-upper'}, ros, candidates, partiesMajor, partiesRaw, mapZoomed);
+    choroplethLower = new ChoroplethMap({parentElement: 'choroplethdiv-lower'}, ros, candidates, partiesMajor, partiesRaw, mapZoomed);
     timelineSliderUpper = new TimelineSlider({parentElement: 'sliderdiv-upper', isUpper: true, margin: {top: 40, right: 30, bottom: 5, left: 30}}, candidates, changeDate.bind(choroplethUpper));
     timelineSliderLower = new TimelineSlider({parentElement: 'sliderdiv-lower', isUpper: false, margin: {top: 5, right: 30, bottom: 30, left: 30}}, candidates, changeDate.bind(choroplethLower));
     barPlotUpper = new Barplot({parentElement: 'barplotdiv-upper'}, candidates, partiesMajor);
@@ -56,4 +52,9 @@ main();
 
 function changeDate(newDate) {
     this.changeDate(newDate);
+}
+
+function mapZoomed(transform) {
+    choroplethUpper.zoomed(transform);
+    choroplethLower.zoomed(transform);
 }

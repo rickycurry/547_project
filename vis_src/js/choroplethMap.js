@@ -12,8 +12,9 @@ export class ChoroplethMap {
     * @param _candidateData {Array}
     * @param _majorPartiesLookup {Array}
     * @param _rawPartiesLookup {Array}
+    * @param _mapZoomCallback {Function}
     */
-    constructor(_config, _geoData, _candidateData, _majorPartiesLookup, _rawPartiesLookup) {
+    constructor(_config, _geoData, _candidateData, _majorPartiesLookup, _rawPartiesLookup, _mapZoomCallback) {
         // Configuration object with defaults
         this.config = {
             parentElement: _config.parentElement,
@@ -30,6 +31,7 @@ export class ChoroplethMap {
         this.rawPartiesLookup = new Map();
         _rawPartiesLookup.forEach(d => this.rawPartiesLookup.set(d.id, d.party));
         this.currentRoIdx = 17;
+        this.mapZoomCallback = _mapZoomCallback;
 
         // this.projection = d3.geoMercator();
         this.projection = d3.geoConicConformal()
@@ -41,9 +43,9 @@ export class ChoroplethMap {
         
         this.zoom = d3.zoom()
             .scaleExtent([1, 40])
-            .on("zoom", (event) => this.zoomed(event, this.chart));
+            .on("zoom", (event) => this.mapZoomCallback(event));
 
-        this.tooltipBodyFn = d => "";
+        this.tooltipBodyFn = () => "";
         
         this.initVis();
     }
@@ -69,8 +71,8 @@ export class ChoroplethMap {
         // Define size of SVG drawing area
         vis.svg = d3.select(`#${vis.config.parentElement}`)
             .append('svg')
-            .attr('width', '100%')
-            .attr('height', '100%')
+            .attr('width', '98%')
+            .attr('height', '98%')
             .attr('viewBox', [0, 0, vis.width, vis.height]);
 
         // SVG Group containing the actual chart
@@ -126,9 +128,9 @@ export class ChoroplethMap {
         // renderLegend(vis.chart, vis.colourScale);
     }
 
-    zoomed(event, svg) {
+    zoomed(event) {
         const {transform} = event;
-        svg.attr("transform", transform);
+        this.chart.attr("transform", transform);
     }
 
     filterCandidates() {

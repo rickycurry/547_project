@@ -51,13 +51,8 @@ export class TimelineSlider {
             .append('svg')
             .attr('width', '100%')
             .attr('height', '100%')
-            // .attr('viewBox', [0, 0, vis.width, vis.height]);
+            // Weird convention, but borrowed from https://observablehq.com/@mbostock/hello-d3-simple-slider
             .attr('viewBox', [-vis.config.margin.left, -vis.config.margin.top, sliderDiv.offsetWidth, sliderDiv.offsetHeight]);
-
-        // SVG Group containing the actual chart
-        // vis.chart = vis.svg.append('g')
-        //     .classed("chart", true)
-        //     .attr('transform', `translate(${vis.config.margin.left},${vis.config.margin.top})`);
 
         vis.updateVis();
     }
