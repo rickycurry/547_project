@@ -35,9 +35,9 @@ async function loadROs(ro_years) {
 
 async function main() {
     await loadData();
-    choroplethUpper = new ChoroplethMap({parentElement: 'choroplethdiv-upper'}, ros, candidates, partiesMajor, partiesRaw, mapZoomed);
+    choroplethUpper = new ChoroplethMap({parentElement: 'choroplethdiv-upper', currentParliament: 1}, ros, candidates, partiesMajor, partiesRaw, mapZoomed);
     choroplethLower = new ChoroplethMap({parentElement: 'choroplethdiv-lower'}, ros, candidates, partiesMajor, partiesRaw, mapZoomed);
-    timelineSliderUpper = new TimelineSlider({parentElement: 'sliderdiv-upper', isUpper: true, margin: {top: 40, right: 30, bottom: 5, left: 30}}, candidates, changeDate.bind(choroplethUpper));
+    timelineSliderUpper = new TimelineSlider({parentElement: 'sliderdiv-upper', isUpper: true, margin: {top: 40, right: 30, bottom: 5, left: 30}, initializeMin: true}, candidates, changeDate.bind(choroplethUpper));
     timelineSliderLower = new TimelineSlider({parentElement: 'sliderdiv-lower', isUpper: false, margin: {top: 5, right: 30, bottom: 30, left: 30}}, candidates, changeDate.bind(choroplethLower));
     barPlotUpper = new Barplot({parentElement: 'barplotdiv-upper'}, candidates, partiesMajor);
     barPlotLower = new Barplot({parentElement: 'barplotdiv-lower'}, candidates, partiesMajor);

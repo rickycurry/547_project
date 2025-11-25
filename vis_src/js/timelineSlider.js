@@ -16,6 +16,7 @@ export class TimelineSlider {
             minSize: _config.minSize || {height: 66, width: 1800},
             margin: _config.margin || {top: 40, right: 30, bottom: 5, left: 30},
             isUpper: _config.isUpper || false,
+            initializeMin: _config.initializeMin || false,
         }
 
         this.candidates = _candidateData;
@@ -68,7 +69,7 @@ export class TimelineSlider {
         vis.slider
             .min(d3.min(vis.electionDates))
             .max(d3.max(vis.electionDates))
-            .default(d3.max(vis.electionDates))
+            .default(vis.config.initializeMin ? d3.min(vis.electionDates) : d3.max(vis.electionDates))
             .marks(vis.electionDates)
             .width(vis.width)
             .height(vis.height)

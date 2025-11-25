@@ -22,15 +22,14 @@ export class ChoroplethMap {
             tooltipPadding: _config.tooltipPadding || 10,
         }
 
-        this.currentParliament = _config.currentParliament || 44
-        this.currentByElection = _config.currentByElection || 0
+        this.currentParliament = _config.currentParliament || 44;
+        this.currentByElection = _config.currentByElection || 0;
 
         this.candidatesGroupedByParliament = d3.group(_candidateData, d => d.parliament);
         this.ros = _geoData;
         this.majorPartiesLookup = _majorPartiesLookup;
         this.rawPartiesLookup = new Map();
         _rawPartiesLookup.forEach(d => this.rawPartiesLookup.set(d.id, d.party));
-        this.currentRoIdx = 17;
         this.mapZoomCallback = _mapZoomCallback;
 
         // this.projection = d3.geoMercator();
@@ -80,10 +79,12 @@ export class ChoroplethMap {
             .classed("chart", true)
             .attr('transform', `translate(${vis.config.margin.left},${vis.config.margin.top})`);;
 
-        vis.projection.fitExtent([[0, 0], [vis.width, vis.height]], vis.ros[vis.currentRoIdx]);
-        vis.svg.call(vis.zoom);
         // TODO: figure out how to restrict the pan extents to this initial bounds.
         // Possibly d3-zoom.translateExtent?
+        // Initially frame the map to fit everything in the final RO
+        vis.projection.fitExtent([[0, 0], [vis.width, vis.height]], 
+                                 vis.ros[vis.ros.length - 1]);
+        vis.svg.call(vis.zoom);
 
         // This will change in the future depending on which "mode" the map is in, perhaps
         vis.colourScheme = d3.interpolateBlues;
@@ -98,7 +99,6 @@ export class ChoroplethMap {
 
     updateVis() {
         let vis = this;
-
         vis.filterCandidates();
         vis.selectRO();
         vis.initValueMap();
