@@ -54,9 +54,9 @@ export class ChoroplethMap {
         this.updateVis();
     }
 
-    changeDate(newDate) {
+    changeParliament(newParliament) {
         let vis = this;
-        vis.currentParliament = vis.dateParliamentMap.get(newDate.valueOf());
+        vis.currentParliament = newParliament;
         vis.updateVis();
     }
 
@@ -88,11 +88,6 @@ export class ChoroplethMap {
 
         // This will change in the future depending on which "mode" the map is in, perhaps
         vis.colourScheme = d3.interpolateBlues;
-
-        vis.dateParliamentMap = new Map();
-        vis.candidatesGroupedByParliament.forEach((candidates, parliament) => {
-            vis.dateParliamentMap.set(candidates[0].edate.valueOf(), parliament);
-        });
 
         vis.updateVis();
     }

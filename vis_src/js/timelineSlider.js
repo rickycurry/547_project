@@ -40,7 +40,6 @@ export class TimelineSlider {
             }
             vis.parliamentToYearMap.set(d.parliament, yearFormatter(d.edate));
         });
-        console.log(vis.parliamentToYearMap);
 
         const sliderDiv = document.getElementById(vis.config.parentElement);
         vis.width = sliderDiv.offsetWidth - vis.config.margin.left - vis.config.margin.right;
@@ -65,16 +64,16 @@ export class TimelineSlider {
     renderVis() {
         let vis = this;
         vis.slider = vis.config.isUpper ? d3.sliderTop() : d3.sliderBottom();
-        const parliaments = vis.parliamentToYearMap.keys();
+        const parliaments = Array.from(vis.parliamentToYearMap.keys());
         vis.slider
-            .min(d3.min(vis.parliamentToYearMap.keys()))
-            .max(d3.max(vis.parliamentToYearMap.keys()))
-            .default(vis.config.initializeMin ? d3.min(vis.parliamentToYearMap.keys()) : d3.max(vis.parliamentToYearMap.keys()))
-            .marks(vis.parliamentToYearMap.keys())
+            .min(d3.min(parliaments))
+            .max(d3.max(parliaments))
+            .default(vis.config.initializeMin ? d3.min(parliaments) : d3.max(parliaments))
+            .marks(parliaments)
             .width(vis.width)
             .height(vis.height)
             .tickFormat(d => vis.parliamentToYearMap.get(d))
-            .tickValues(vis.parliamentToYearMap.keys())
+            .tickValues(parliaments)
             .on("onchange", vis.changeDateCallback);
 
         vis.svg.call(vis.slider);
