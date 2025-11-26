@@ -32,16 +32,15 @@ export class TimelineSlider {
         //  numeric representation or something?), so jump through hoops to retain just unique
         //  YYYY-MM-DD dates.
         const primaryElectionCandidates = vis.candidates.filter(d => d.type_elxn === 0);
-        const crudeDateSet = new Set();
-        vis.electionDates = new Array();
+        vis.parliamentToYearMap = new Map();
+        const yearFormatter = d3.utcFormat("%Y")
         primaryElectionCandidates.forEach(d => {
-            const crudeString = d.edate.toDateString();
-            if (crudeDateSet.has(crudeString)) {
+            if (vis.parliamentToYearMap.has(d.parliament)) {
                 return;
             }
-            vis.electionDates.push(d.edate);
-            crudeDateSet.add(crudeString);
+            vis.parliamentToYearMap.set(d.parliament, yearFormatter(d.edate));
         });
+        console.log(vis.parliamentToYearMap);
 
         const sliderDiv = document.getElementById(vis.config.parentElement);
         vis.width = sliderDiv.offsetWidth - vis.config.margin.left - vis.config.margin.right;
@@ -66,16 +65,17 @@ export class TimelineSlider {
     renderVis() {
         let vis = this;
         vis.slider = vis.config.isUpper ? d3.sliderTop() : d3.sliderBottom();
+        const parliaments = vis.parliamentToYearMap.keys();
         vis.slider
-            .min(d3.min(vis.electionDates))
-            .max(d3.max(vis.electionDates))
-            .default(vis.config.initializeMin ? d3.min(vis.electionDates) : d3.max(vis.electionDates))
-            .marks(vis.electionDates)
+            .min(d3.min(vis.parliamentToYearMap.keys()))
+            .max(d3.max(vis.parliamentToYearMap.keys()))
+            .default(vis.config.initializeMin ? d3.min(vis.parliamentToYearMap.keys()) : d3.max(vis.parliamentToYearMap.keys()))
+            .marks(vis.parliamentToYearMap.keys())
             .width(vis.width)
             .height(vis.height)
-            .tickFormat(d3.utcFormat("%Y"))
-            .tickValues(vis.electionDates)
-            .on("onchange", val => vis.changeDateCallback(val));
+            .tickFormat(d => vis.parliamentToYearMap.get(d))
+            .tickValues(vis.parliamentToYearMap.keys())
+            .on("onchange", vis.changeDateCallback);
 
         vis.svg.call(vis.slider);
 
