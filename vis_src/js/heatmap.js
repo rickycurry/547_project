@@ -33,13 +33,14 @@ export class Heatmap {
         let vis = this;
 
         const sliderDiv = document.getElementById(vis.config.parentElement);
-        vis.width = sliderDiv.offsetWidth - vis.config.margin.left - vis.config.margin.right;
+        vis.widthMultiplier = 0.93;
+        vis.width = (sliderDiv.offsetWidth * vis.widthMultiplier) - vis.config.margin.left - vis.config.margin.right;
         vis.height = sliderDiv.offsetHeight - vis.config.margin.top - vis.config.margin.bottom;
 
         // Define size of SVG drawing area
         vis.svg = d3.select(`#${vis.config.parentElement}`)
             .append('svg')
-            .attr('width', '100%')
+            .attr('width', `${vis.widthMultiplier * 100}%`)
             .attr('height', '100%')
             .attr('viewBox', [0, 0, vis.width, vis.height]);
 
@@ -85,15 +86,20 @@ export class Heatmap {
 
         vis.chart.selectAll()
             .data(vis.data)
-            .join('g')
-            .attr('transform', (d, i) => `translate(0, ${vis.y(vis.rowLabels[i])})`)
-            .selectAll('rect')
-            .data(d => d)
             .join('rect')
-            .attr('x', d => vis.x(d[0]))
+            .attr('y', d => vis.y(d.rowLabel))
+            .attr('x', d => vis.x(d.parliament))
             .attr('width', vis.x.bandwidth())
-            // .attr('y', (d, i) => i * 20)
-            .attr('height', vis.y.bandwidth());
+            .attr('height', vis.y.bandwidth())
+            .style('fill', d => vis.colourScales.get(d.rowLabel)(d.val))
+            .on("mousemove", (event, d) => {
+                d3.select('#map-tooltip')
+                    .style('display', 'block')
+                    .style('left', (event.pageX + vis.config.tooltipPadding) + 'px')
+                    .style('bottom', (window.innerHeight - event.pageY + vis.config.tooltipPadding) + 'px')
+                    .html(`<div class="tooltip-title">${d.parliament}</div>`);
+            })
+            .on('mouseleave', () => { d3.select('#map-tooltip').style('display', 'none'); });;
 
         // TODO: get legend working. Probably need to create my own class for it...
         // renderLegend(vis.chart, vis.colourScale);
@@ -102,6 +108,8 @@ export class Heatmap {
     initData() {
         let vis = this;
 
+        vis.data = [];
+        vis.colourScales = new Map();
         // Will combine outcome and margin eventually. For now, calculate vote share for the winning party??
         const winningPartyPopularVote = d3.rollups(vis.candidates, D => {
                 const winningParty = D[0].gov_major_group;
@@ -110,18 +118,38 @@ export class Heatmap {
                                            .reduce((acc, candidate) => acc + candidate.votes, 0);
                 return winningPartyVotes / allVotes;
             }, d => d.parliament);
+        winningPartyPopularVote.forEach(d => vis.data.push({val: d[1], parliament: d[0], rowLabel: 'Outcome'}));
+        vis.colourScales.set('Outcome', d3.scaleSequential([
+                d3.min(winningPartyPopularVote, d => d[1]),
+                d3.max(winningPartyPopularVote, d => d[1])
+            ], vis.colourScheme));
 
         const nonMale = d3.rollups(vis.candidates, 
                                    D => D.filter(d => d.gender !== 'M').length / D.length,
                                    d => d.parliament);
+        nonMale.forEach(d => vis.data.push({val: d[1], parliament: d[0], rowLabel: 'Non-male'}));
+        vis.colourScales.set('Non-male', d3.scaleSequential([
+                d3.min(nonMale, d => d[1]),
+                d3.max(nonMale, d => d[1])
+            ], vis.colourScheme));
 
         const indigenous = d3.rollups(vis.candidates, 
                                       D => D.filter(d => d.indigenousorigins === 1).length / D.length,
                                       d => d.parliament);
+        indigenous.forEach(d => vis.data.push({val: d[1], parliament: d[0], rowLabel: 'Indigenous'}));
+        vis.colourScales.set('Indigenous', d3.scaleSequential([
+                d3.min(indigenous, d => d[1]),
+                d3.max(indigenous, d => d[1])
+            ], vis.colourScheme));        
 
         const age = d3.rollups(vis.candidates, 
                                D => d3.mean(D, d => d.age_at_election),
                                d => d.parliament);
+        age.forEach(d => vis.data.push({val: d[1], parliament: d[0], rowLabel: 'Age'}));
+        vis.colourScales.set('Age', d3.scaleSequential([
+                d3.min(age, d => d[1]),
+                d3.max(age, d => d[1])
+            ], vis.colourScheme));        
 
         const count = d3.rollups(vis.candidates, D => {
                 // D contains all candidates for a given election.
@@ -131,8 +159,11 @@ export class Heatmap {
                                                       e => e.fed_id);
                 return d3.mean(fedCandidateCounts, e => e[1]);
             }, d => d.parliament);
-        
-        vis.data = [winningPartyPopularVote, nonMale, indigenous, age, count];
+        count.forEach(d => vis.data.push({val: d[1], parliament: d[0], rowLabel: 'Count'}));
+        vis.colourScales.set('Count', d3.scaleSequential([
+                d3.min(count, d => d[1]),
+                d3.max(count, d => d[1])
+            ], vis.colourScheme));
     }
 
     // getColour(datum) {
