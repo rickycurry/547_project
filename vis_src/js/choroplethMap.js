@@ -167,11 +167,15 @@ export class ChoroplethMap {
 
         switch (vis.quantAttr) {
             case "margin":
+                // compute margin of victory between top two candidates
                 vis.valueMap = d3.rollup(vis.filteredCandidates, v => {
+                    // if only one candidate, margin is null
                         if (v.length <= 1) {
                             return null;
                         }
+                    // sort descending by percent_votes
                         v.sort((a, b) => b.percent_votes - a.percent_votes);
+                        // return difference between top two candidates
                         return v[0].percent_votes - v[1].percent_votes;
                     }, 
                     d => d.fed_id);

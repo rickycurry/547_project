@@ -15,9 +15,11 @@ export class Barplot {
             containerHeight: _config.containerHeight || 480,
             margin: _config.margin || {top: 30, right: 10, bottom: 50, left: 35},
         }
-
+        
         this.candidates = _candidateData;
+        this.candidatesGroupedByParliament = d3.group(_candidateData, d => d.parliament);
         this.majorPartiesLookup = new Map();
+        this.currentRoIdx = 0;
         _majorPartiesLookup.forEach(d => this.majorPartiesLookup.set(d.id, d.party));
         this.initVis();
     }
@@ -25,6 +27,12 @@ export class Barplot {
     changeQuantAttr(attr) {
         this.quantAttr = attr;
         this.updateVis();
+    }
+
+    changeDate(newDate) {
+        let vis = this;
+        vis.currentParliament = vis.dateParliamentMap.get(newDate.valueOf());
+        vis.updateVis();
     }
 
     initVis() {
@@ -67,12 +75,17 @@ export class Barplot {
         vis.yAxisG = vis.chart.append("g")
             .attr("class", "y-axis");
 
+        vis.dateParliamentMap = new Map();
+        vis.candidatesGroupedByParliament.forEach((candidates, parliament) => {
+        vis.dateParliamentMap.set(candidates[0].edate.valueOf(), parliament);
+        });
+
         vis.updateVis();
     }
 
     updateVis() {
         let vis = this;
-        vis.data = vis.updateData(vis.candidates);
+        vis.data = vis.updateData();
         vis.xValue = d => d[0];
         vis.yValue = d => d[1];
         // TODO: sort this alphabetically (to improve top-bottom comparison) 
@@ -109,36 +122,65 @@ export class Barplot {
             );
     }
 
+    filterCandidates() {
+        // We only want to update the FEDs that changed in the by-election cycle.
+        let vis = this;
+        vis.filteredCandidates = vis.candidatesGroupedByParliament.get(vis.currentParliament);
+        if (vis.currentByElection === 0) {
+            vis.filteredCandidates = vis.filteredCandidates.filter(d => d.type_elxn === vis.currentByElection);
+        }
+        else {
+            // TODO: implement
+        }
+    }
+
+    selectRO() {
+        let vis = this;
+        vis.currentRoIdx = 0;
+        // By now, candidates should be filtered to just one single parliament (and RO)
+        const roYear = vis.filteredCandidates[0].ro.toString();
+        for (const [i, ro] of vis.ros.entries()) {
+            if (ro.name.substring(3) === roYear) {
+                vis.currentRoIdx = i;
+                break;
+            }
+        }
+    }
+
     updateData() {
         let vis = this;
-        
-        // default to 'count' when quantAttr is not set
-        const attr = vis.quantAttr || "count";
+        vis.filterCandidates();
+
+        // default to 'outcome' when quantAttr is not set
+        const attr = vis.quantAttr || "outcome";
         // wipe vis.data just in case....
         vis.data = [];
 
+        // use the already-filtered candidate list for the currently selected RO/parliament
+        const primaryElectionCandidates = vis.filteredCandidates || vis.candidates;
+
         switch (attr) {
             case "margin":
-                vis.data = vis.computeMarginCounts(vis.candidates);
+                vis.data = vis.computeMarginCounts(primaryElectionCandidates);
                 break;
             case "non-male":
-                vis.data = vis.computeGenderCounts(vis.candidates);
+                vis.data = vis.computeGenderCounts(primaryElectionCandidates);
                 break;
              case "indigenous":
-                vis.data = vis.computeIndigenousCounts(vis.candidates);
+                vis.data = vis.computeIndigenousCounts(primaryElectionCandidates);
                 break;
             case "age":
-                vis.data = vis.computeAgeCounts(vis.candidates);
+                vis.data = vis.computeAgeCounts(primaryElectionCandidates);
                 break;
             case "count":
                 //return the number of candidates per major party
                 vis.data = d3.rollup(
-                    vis.candidates.filter(d => d.parliament === 44), 
+                    primaryElectionCandidates, 
                     D => D.length, 
                     d => vis.majorPartiesLookup.get(d.party_major_group_cleaned));
                 break;
             case "outcome":
-                vis.data = vis.NumberFEDWins(vis.candidates);
+                vis.data = vis.NumberFEDWins(primaryElectionCandidates);
                 break;
         }
         // if a map (from d3.rollup) was produced, convert to array of [key, value] pairs
@@ -152,39 +194,64 @@ export class Barplot {
     // get proportion of non-male candidates per party.
     computeGenderCounts(primaryElectionCandidates) {
         let vis = this;
-        primaryElectionCandidates = primaryElectionCandidates.filter(d => d.parliament === 44);
-        return d3.rollup(
+        // assume primaryElectionCandidates is already restricted to the selected parliament/RO
+        const map = d3.rollup(
             primaryElectionCandidates, 
             D => {
                 const totalCandidateCount = D.length;
-                return D.filter(c => c.gender != 'M').length / totalCandidateCount;
+                if (totalCandidateCount) {
+                    // count all candidates who are not male
+                    const nonMaleCount = D.filter(c => c.gender !== 'M').length;
+                    return nonMaleCount / totalCandidateCount;
+                } else {
+                    return 0;
+                }
             }, 
-            d => vis.majorPartiesLookup.get(d.party_major_group_cleaned));
+            d => vis.majorPartiesLookup.get(d.party_major_group_cleaned)
+        );
+        return map;
     }
 
     // get proportion of indigenous candidates per party.
     computeIndigenousCounts(primaryElectionCandidates) {
         let vis = this;
-        primaryElectionCandidates = primaryElectionCandidates.filter(d => d.parliament === 44);
+        // assume primaryElectionCandidates is already restricted to the selected parliament/RO
         return d3.rollup(
             primaryElectionCandidates, 
             D => {
                 const totalCandidateCount = D.length;
-                return D.filter(c => c.indigenousorigins === 1).length / totalCandidateCount;
+                if (!totalCandidateCount) return 0;
+                return D.filter(c => +c.indigenousorigins === 1).length / totalCandidateCount;
             }, 
-            d => vis.majorPartiesLookup.get(d.party_major_group_cleaned));
-        }
+            d => vis.majorPartiesLookup.get(d.party_major_group_cleaned)
+        );
+    }
 
     // get average age of candidates per party.
     computeAgeCounts(primaryElectionCandidates) {
         let vis = this;
-        primaryElectionCandidates = primaryElectionCandidates.filter(d => d.parliament === 44);
+        // assume primaryElectionCandidates is already restricted to selected RO/parliament
         const map = d3.rollup(
             primaryElectionCandidates,
             D => {
-                // change to numbers and remove invalid age entries
-                const ages = D.map(c => c.age).filter(n => Number.isFinite(n));
-                return ages.length ? d3.mean(ages) : 0;
+                // coerce to numbers and remove invalid entries
+                const ages = D
+                    .map(c => {
+                        if (c.age === null || c.age === undefined) return NaN;
+                        if (typeof c.age === "string" && c.age.trim() === "") return NaN;
+                        const n = +c.age;
+                        if (Number.isFinite(n)) {
+                            return n;
+                        } else {
+                            return NaN;
+                        }
+                    })
+                    .filter(Number.isFinite);
+                if (ages.length > 0) {
+                    return d3.mean(ages);
+                } else {
+                    return 0;
+                }
             },
             d => vis.majorPartiesLookup.get(d.party_major_group_cleaned)
         );
@@ -194,11 +261,11 @@ export class Barplot {
     // get number of FED wins per party.
     NumberFEDWins(primaryElectionCandidates) {
         let vis = this;
-        primaryElectionCandidates = primaryElectionCandidates.filter(d => d.parliament === 44);
+        // assume primaryElectionCandidates is already restricted to selected RO/parliament
         return d3.rollup(
             primaryElectionCandidates,
             D => {
-                return D.filter(c => c.elected === 1).length;
+                return D.filter(c => +c.elected === 1).length;
             },
             d => vis.majorPartiesLookup.get(d.party_major_group_cleaned)
         );
@@ -207,20 +274,21 @@ export class Barplot {
     // for each FED, compute the percentage margin of victory between the top two candidates.
     computeMarginCounts(primaryElectionCandidates) {
         let vis = this;
-        primaryElectionCandidates = primaryElectionCandidates.filter(d => d.parliament === 44);
-        // if only one candidate in FED, margin is null
+        // assume primaryElectionCandidates is already restricted to selected RO/parliament
         return d3.rollup(
             primaryElectionCandidates,
             D => {
-                // sort descending by percent_votes
-                D.sort((a, b) => b.percent_votes - a.percent_votes);
-                // return difference between top two candidates
+                // work with numeric percent_votes
+                D.sort((a, b) => (+b.percent_votes) - (+a.percent_votes));
                 if (D.length > 1) {
-                    return (D[0].percent_votes - D[1].percent_votes)*0.01; // convert to proportion
+                    const topCandidateVotes = Number(D[0].percent_votes);
+                    const secondCandidateVotes = Number(D[1].percent_votes);
+                    if (Number.isFinite(topCandidateVotes) && Number.isFinite(topCandidateVotes)) {
+                        // return proportion
+                        return (topCandidateVotes - secondCandidateVotes) * 0.01;
+                    }
                 }
-                else {
-                    return null;
-                }   
+                return null;
             },
             d => vis.majorPartiesLookup.get(d.party_major_group_cleaned)
         );

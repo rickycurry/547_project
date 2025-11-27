@@ -57,5 +57,6 @@ quantAttrDropdown.addEventListener('change', () => {
 });
 
 function changeDate(newDate) {
+    barPlot.changeDate(newDate);
     choropleth.changeDate(newDate);
 }
