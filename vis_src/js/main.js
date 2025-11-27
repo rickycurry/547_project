@@ -3,6 +3,7 @@ import "./external/topojson-client.js";
 import { ChoroplethMap } from "./choroplethMap.js"
 import { TimelineSlider } from "./timelineSlider.js"
 import { Barplot } from "./barplot.js"
+import { Heatmap } from "./heatmap.js";
 
 let ros, candidates, partiesMajor, partiesRaw;
 let choroplethUpper, choroplethLower;
@@ -41,7 +42,7 @@ async function main() {
     timelineSliderLower = new TimelineSlider({parentElement: 'sliderdiv-lower', isUpper: false, margin: {top: 5, right: 30, bottom: 30, left: 30}}, candidates, changeParliament.bind(choroplethLower));
     barPlotUpper = new Barplot({parentElement: 'barplotdiv-upper'}, candidates, partiesMajor);
     barPlotLower = new Barplot({parentElement: 'barplotdiv-lower'}, candidates, partiesMajor);
-
+    heatmap = new Heatmap({parentElement: 'heatmapdiv'}, candidates, partiesMajor, partiesRaw);
 }
 
 main();
