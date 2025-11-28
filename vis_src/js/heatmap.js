@@ -12,7 +12,7 @@ export class Heatmap {
         // Configuration object with defaults
         this.config = {
             parentElement: _config.parentElement,
-            margin: _config.margin || {top: 0, right: 10, bottom: 10, left: 60},
+            margin: _config.margin || {top: 0, right: 50, bottom: 10, left: 55},
             tooltipPadding: _config.tooltipPadding || 10,
         }
 
@@ -33,7 +33,7 @@ export class Heatmap {
         let vis = this;
 
         const sliderDiv = document.getElementById(vis.config.parentElement);
-        vis.widthMultiplier = 0.93;
+        vis.widthMultiplier = 1.0;
         vis.width = (sliderDiv.offsetWidth * vis.widthMultiplier) - vis.config.margin.left - vis.config.margin.right;
         vis.height = sliderDiv.offsetHeight - vis.config.margin.top - vis.config.margin.bottom;
 
@@ -58,7 +58,7 @@ export class Heatmap {
         console.log(parliaments);
         vis.x = d3.scaleBand()
             .domain(parliaments)
-            .range([0, vis.width])
+            .range([0, vis.width - vis.config.margin.left - vis.config.margin.right])
             .padding(0.02);
         vis.chart.append("g")
             .call(d3.axisBottom(vis.x));

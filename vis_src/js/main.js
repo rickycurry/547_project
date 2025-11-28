@@ -38,8 +38,8 @@ async function main() {
     await loadData();
     choroplethUpper = new ChoroplethMap({parentElement: 'choroplethdiv-upper', currentParliament: 1}, ros, candidates, partiesMajor, partiesRaw, mapZoomed);
     choroplethLower = new ChoroplethMap({parentElement: 'choroplethdiv-lower'}, ros, candidates, partiesMajor, partiesRaw, mapZoomed);
-    timelineSliderUpper = new TimelineSlider({parentElement: 'sliderdiv-upper', isUpper: true, margin: {top: 40, right: 30, bottom: 5, left: 30}, initializeMin: true}, candidates, changeParliament.bind(choroplethUpper));
-    timelineSliderLower = new TimelineSlider({parentElement: 'sliderdiv-lower', isUpper: false, margin: {top: 5, right: 30, bottom: 30, left: 30}}, candidates, changeParliament.bind(choroplethLower));
+    timelineSliderUpper = new TimelineSlider({parentElement: 'sliderdiv-upper', isUpper: true, margin: {top: 40, right: 70, bottom: 5, left: 78}, initializeMin: true}, candidates, changeParliament.bind(choroplethUpper));
+    timelineSliderLower = new TimelineSlider({parentElement: 'sliderdiv-lower', isUpper: false, margin: {top: 5, right: 70, bottom: 30, left: 78}}, candidates, changeParliament.bind(choroplethLower));
     barPlotUpper = new Barplot({parentElement: 'barplotdiv-upper'}, candidates, partiesMajor);
     barPlotLower = new Barplot({parentElement: 'barplotdiv-lower'}, candidates, partiesMajor);
     heatmap = new Heatmap({parentElement: 'heatmapdiv'}, candidates, partiesMajor, partiesRaw);
