@@ -35,7 +35,9 @@ export class Barplot {
             .range([vis.height, 0]);
 
         vis.xScale = d3.scaleBand()
-            .range([0, vis.width])
+            // Same with heatmap -- why does this work so nicely? We shouldn't have to
+            // double-subtract margins...
+            .range([0, vis.width - vis.config.margin.left - vis.config.margin.right])
             .padding(0.15);
 
         // Initialize axes
