@@ -49,8 +49,8 @@ export class ChoroplethMap {
         this.initVis();
     }
 
-    changeQuantAttr(attr) {
-        this.quantAttr = attr;
+    changeAOI(aoiString) {
+        this.quantAttr = aoiString;
         this.updateVis();
     }
 
@@ -176,7 +176,7 @@ export class ChoroplethMap {
                 };
                 break;
 
-            case "non-male":
+            case "Non-male":
                 vis.valueMap = d3.rollup(vis.filteredCandidates, v => {
                         const nonMaleCount = v.filter(d => d.gender !== 'M').length;
                         return nonMaleCount / v.length;
@@ -193,7 +193,7 @@ export class ChoroplethMap {
                 };
                 break;
                 
-            case "indigenous":
+            case "Indigenous":
                 vis.valueMap = d3.rollup(vis.filteredCandidates, v => {
                         const indigenousCount = v.filter(d => d.indigenousorigins === 1).length;
                         return indigenousCount / v.length;
@@ -209,7 +209,7 @@ export class ChoroplethMap {
                 };
                 break;
 
-            case "age":
+            case "Age":
                 vis.valueMap = d3.rollup(vis.filteredCandidates, v => d3.mean(v, d => d.age_at_election), d => d.fed_id);
                 vis.tooltipBodyFn = d => {
                     // NOTE: we basically only have age data for winners, not all candidates!
@@ -220,7 +220,7 @@ export class ChoroplethMap {
                 };
                 break;
 
-            case "count":
+            case "Count":
                 vis.valueMap = d3.rollup(vis.filteredCandidates, v => v.length, d => d.fed_id);
                 vis.tooltipBodyFn = d => {
                     const fedIdInt = parseInt(d.properties.id);
@@ -231,7 +231,7 @@ export class ChoroplethMap {
                 };
                 break;
 
-            case "outcome":
+            case "Outcome":
             default:
                 vis.valueMap = d3.rollup(vis.filteredCandidates, v => {
                         const winners = v.filter(d => d.elected === 1);

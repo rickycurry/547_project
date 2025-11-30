@@ -42,7 +42,7 @@ async function main() {
     timelineSliderLower = new TimelineSlider({parentElement: 'sliderdiv-lower', isUpper: false, margin: {top: 5, right: 70, bottom: 30, left: 78}}, candidates, changeParliament.bind(choroplethLower));
     barPlotUpper = new Barplot({parentElement: 'barplotdiv-upper'}, candidates, partiesMajor);
     barPlotLower = new Barplot({parentElement: 'barplotdiv-lower'}, candidates, partiesMajor);
-    heatmap = new Heatmap({parentElement: 'heatmapdiv'}, candidates, partiesMajor, partiesRaw);
+    heatmap = new Heatmap({parentElement: 'heatmapdiv'}, candidates, partiesMajor, partiesRaw, changeAOI);
 }
 
 main();
@@ -54,6 +54,14 @@ main();
 
 function changeParliament(newParliament) {
     this.changeParliament(newParliament);
+}
+
+function changeAOI(aoiString) {
+    console.log(aoiString);
+    choroplethLower.changeAOI(aoiString);
+    choroplethUpper.changeAOI(aoiString);
+    barPlotLower.changeAOI(aoiString);
+    barPlotUpper.changeAOI(aoiString);
 }
 
 function mapZoomed(transform) {

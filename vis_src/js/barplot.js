@@ -46,7 +46,8 @@ export class Barplot {
             .tickSizeOuter(0);
 
         vis.yAxis = d3.axisLeft(vis.yScale)
-            .tickSizeOuter(0);
+            .tickSizeOuter(0)
+            .tickFormat(d3.format(".0%"));
 
         vis.svg = d3.select(`#${vis.config.parentElement}`)
             .append('svg')
@@ -76,9 +77,9 @@ export class Barplot {
         let vis = this;
         vis.chart.append("g")
             .attr("transform", `translate(0, ${vis.height})`)
-            .call(d3.axisBottom(vis.xScale));
+            .call(vis.xAxis);
         vis.chart.append("g")
-            .call(d3.axisLeft(vis.yScale));
+            .call(vis.yAxis);
 
         vis.chart.selectAll(".bar")
             .data(vis.data)
@@ -101,5 +102,10 @@ export class Barplot {
                 return D.filter(c => c.gender != 'M').length / totalCandidateCount;
             }, 
             d => vis.majorPartiesLookup.get(d.party_major_group_cleaned));
+    }
+
+    changeAOI(aoiString) {
+        this.quantAttr = aoiString;
+        this.updateVis();
     }
 }

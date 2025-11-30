@@ -7,8 +7,9 @@ export class Heatmap {
     * @param _candidateData {Array}
     * @param _majorPartiesLookup {Array}
     * @param _rawPartiesLookup {Array}
+    * @param _changeAOICallback {Function}
     */
-    constructor(_config, _candidateData, _majorPartiesLookup, _rawPartiesLookup) {
+    constructor(_config, _candidateData, _majorPartiesLookup, _rawPartiesLookup, _changeAOICallback) {
         // Configuration object with defaults
         this.config = {
             parentElement: _config.parentElement,
@@ -24,6 +25,7 @@ export class Heatmap {
         this.rawPartiesLookup = new Map();
         _rawPartiesLookup.forEach(d => this.rawPartiesLookup.set(d.id, d.party));
 
+        this.changeAOICallback = _changeAOICallback;
         this.tooltipBodyFn = () => "";
         
         this.initVis();
@@ -33,14 +35,13 @@ export class Heatmap {
         let vis = this;
 
         const sliderDiv = document.getElementById(vis.config.parentElement);
-        vis.widthMultiplier = 1.0;
-        vis.width = (sliderDiv.offsetWidth * vis.widthMultiplier) - vis.config.margin.left - vis.config.margin.right;
+        vis.width = sliderDiv.offsetWidth - vis.config.margin.left - vis.config.margin.right;
         vis.height = sliderDiv.offsetHeight - vis.config.margin.top - vis.config.margin.bottom;
 
         // Define size of SVG drawing area
         vis.svg = d3.select(`#${vis.config.parentElement}`)
             .append('svg')
-            .attr('width', `${vis.widthMultiplier * 100}%`)
+            .attr('width', '100%')
             .attr('height', '100%')
             .attr('viewBox', [0, 0, vis.width, vis.height]);
 
@@ -51,24 +52,23 @@ export class Heatmap {
 
         vis.rowLabels = ['Outcome', 'Non-male', 'Indigenous', 'Age', 'Count'];
 
-        // This will change in the future depending on which "mode" the map is in, perhaps
+        // This will change in the future depending on which "mode" the map is in, perhaps?
         vis.colourScheme = d3.interpolateBlues;
 
         const parliaments = Array.from(new d3.InternSet(vis.candidates, d => d.parliament), d => d.parliament);
-        console.log(parliaments);
         vis.x = d3.scaleBand()
             .domain(parliaments)
+            // I don't know why this works so well, but it was cutting off the rightmost 2 cells
+            // before I subtracted the margins. Margins are already subtracted in vis.width above!!
+            // Should revisit as time allows.
             .range([0, vis.width - vis.config.margin.left - vis.config.margin.right])
             .padding(0.02);
-        vis.chart.append("g")
-            .call(d3.axisBottom(vis.x));
 
         vis.y = d3.scaleBand()
             .domain(vis.rowLabels)
             .range([0, vis.height])
             .padding(0.02);
         vis.chart.append("g")
-            // .attr('transform', `translate(${50}, 0)`)
             .call(d3.axisLeft(vis.y));
 
         vis.updateVis();
@@ -87,22 +87,42 @@ export class Heatmap {
         vis.chart.selectAll()
             .data(vis.data)
             .join('rect')
-            .attr('y', d => vis.y(d.rowLabel))
+            .attr('y', d => vis.cellY(d))
+            // .attr('y', d => vis.y(d))
             .attr('x', d => vis.x(d.parliament))
             .attr('width', vis.x.bandwidth())
-            .attr('height', vis.y.bandwidth())
+            .attr('height', d => vis.cellHeight(d))
             .style('fill', d => vis.colourScales.get(d.rowLabel)(d.val))
+            .on("click", (event, d) => vis.changeAOICallback(d.rowLabel))
             .on("mousemove", (event, d) => {
                 d3.select('#map-tooltip')
                     .style('display', 'block')
                     .style('left', (event.pageX + vis.config.tooltipPadding) + 'px')
                     .style('bottom', (window.innerHeight - event.pageY + vis.config.tooltipPadding) + 'px')
                     .html(`<div class="tooltip-title">${d.parliament}</div>`);
-            })
-            .on('mouseleave', () => { d3.select('#map-tooltip').style('display', 'none'); });;
+                })
+            .on('mouseleave', () => { d3.select('#map-tooltip').style('display', 'none'); });
 
         // TODO: get legend working. Probably need to create my own class for it...
         // renderLegend(vis.chart, vis.colourScale);
+    }
+
+    cellHeight(d) {
+        let vis = this;
+        if (d.rowLabel === 'Outcome') {
+            return vis.y.bandwidth() * d.val;
+        } else {
+            return vis.y.bandwidth();
+        }
+    }
+
+    cellY(d) {
+        let vis = this;
+        if (d.rowLabel === 'Outcome') {
+            return vis.y(d.rowLabel) + (vis.y.bandwidth() * (1 - d.val));
+        } else {
+            return vis.y(d.rowLabel);
+        }
     }
 
     initData() {
