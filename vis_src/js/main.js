@@ -4,12 +4,14 @@ import { ChoroplethMap } from "./choroplethMap.js"
 import { TimelineSlider } from "./timelineSlider.js"
 import { Barplot } from "./barplot.js"
 import { Heatmap } from "./heatmap.js";
+import { GeoSelector } from "./geoSelector.js";
 
-let ros, candidates, partiesMajor, partiesRaw;
+let ros, candidates, partiesMajor, partiesRaw, fedHierarchy;
 let choroplethUpper, choroplethLower;
 let timelineSliderUpper, timelineSliderLower;
 let barPlotUpper, barPlotLower;
 let heatmap;
+let selector;
 
 const roRoot = "../data/feds/mapshaper_simplified_rewound_4326/";
 
@@ -26,6 +28,7 @@ async function loadCandidates() {
 async function loadData() {
     const ro_years = await loadCandidates();
     ros = await loadROs(ro_years);
+    fedHierarchy = await d3.json('../data/fed_hierarchy.json');
     partiesMajor = await d3.csv('../data/candidates/lookup_tables/parties_major.csv', d3.autoType);
     partiesRaw = await d3.csv('../data/candidates/lookup_tables/parties_raw.csv', d3.autoType);
 }
@@ -43,6 +46,7 @@ async function main() {
     barPlotUpper = new Barplot({parentElement: 'barplotdiv-upper'}, candidates, partiesMajor);
     barPlotLower = new Barplot({parentElement: 'barplotdiv-lower'}, candidates, partiesMajor);
     heatmap = new Heatmap({parentElement: 'heatmapdiv'}, candidates, partiesMajor, partiesRaw, changeAOI);
+    selector = new GeoSelector({parentElement: 'selectordiv'}, fedHierarchy);
 }
 
 main();

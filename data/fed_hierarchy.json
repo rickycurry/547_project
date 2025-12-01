@@ -1,0 +1,78 @@
+{
+  "provinces": [
+    {
+      "name": "Quebec",
+      "regions": [
+        {
+          "name": "Montreal",
+          "regions": [
+            {
+              "name": "Fed 1",
+              "id": 1
+            },
+            {
+              "name": "Fed 2",
+              "id": 2
+            }
+          ]
+        },
+        {
+          "name": "Quebec",
+          "regions": [
+            {
+              "name": "Fed 3",
+              "id": 3
+            },
+            {
+              "name": "Fed 4",
+              "id": 4
+            }
+          ]
+        },
+        {
+          "name": "Fed 5",
+          "id": 5
+        },
+        {
+          "name": "Fed 6",
+          "id": 6
+        }
+      ]
+    },
+    {
+      "name": "British Columbia",
+      "regions": [
+        {
+          "name": "Vancouver",
+          "regions": [
+            {
+              "name": "Fed 7",
+              "id": 7
+            }
+          ]
+        },
+        {
+          "name": "Victoria",
+          "regions": [
+            {
+              "name": "Fed 8",
+              "id": 8
+            },
+            {
+              "name": "Fed 9",
+              "id": 9
+            }
+          ]
+        },
+        {
+          "name": "Fed 10",
+          "id": 10
+        }
+      ]
+    },
+    {
+      "name": "Yukon",
+      "id": 11
+    }
+  ]
+}

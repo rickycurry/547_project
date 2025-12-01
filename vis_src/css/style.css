@@ -8,15 +8,27 @@ html, body {
     display: grid;
     width: 99vw;
     height: 99vh;
-    grid-template-columns: 65% 35%;
+    grid-template-columns: 22% 43% 35%;
     grid-template-rows: 6% 20% 6% 34% 34%
 }
 
 .slider {
-    grid-column: 1 / 3;
+    grid-column: 1 / 4;
 }
 .heatmap {
-    grid-column: 1 / 3;
+    grid-column: 1 / 4;
+}
+.geo-selector {
+    grid-row: 4 / 6;
+    overflow-y: scroll;
+}
+.geo-selector ul {
+    font-size: 0;
+    list-style-type: none;
+}
+.geo-selector li {
+    font-size: 12px;
+    font-family: Verdana;
 }
 
 div {

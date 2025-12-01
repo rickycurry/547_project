@@ -4,5 +4,6 @@ data/*
 !data/candidates/
 data/candidates/candidate_data_cleaned.csv
 !data/feds
+!data/*.json
 
 data_processing/logs/
