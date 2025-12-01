@@ -26,21 +26,14 @@ export class GeoSelector {
 
 function addGroupRecursive(obj, parentUL) {
     const listItem = parentUL.append('li');
-        // .text(obj.name);
 
-    // I really can't figure out how to get the checkboxes to line up on the left. TODO
     if (Object.hasOwn(obj, 'regions')) {
-        const details = listItem.append('details');
-        details.append('summary')
-            .text(obj.name)
-            .append('input', '#text')
-                .attr('type', 'checkbox');
-        const ul = details.append('ul');
+        listItem.html(`<details><summary><input type='checkbox'/>${obj.name}</summary>`);
+        const ul = listItem.select('details')
+            .append('ul');
         obj.regions.forEach(region => addGroupRecursive(region, ul));
     } else {
-        listItem.text(obj.name);
-        listItem.insert('input', '#text')
-            .attr('type', 'checkbox');
+        listItem.html(`<input type='checkbox'/>${obj.name}`);
     }
 }
 
