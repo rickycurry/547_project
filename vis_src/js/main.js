@@ -12,6 +12,7 @@ let timelineSliderUpper, timelineSliderLower;
 let barPlotUpper, barPlotLower;
 let heatmap;
 let selector;
+let selectedGeography = new Set();
 
 const roRoot = "../data/feds/mapshaper_simplified_rewound_4326/";
 
@@ -46,15 +47,10 @@ async function main() {
     barPlotUpper = new Barplot({parentElement: 'barplotdiv-upper'}, candidates, partiesMajor);
     barPlotLower = new Barplot({parentElement: 'barplotdiv-lower'}, candidates, partiesMajor);
     heatmap = new Heatmap({parentElement: 'heatmapdiv'}, candidates, partiesMajor, partiesRaw, changeAOI);
-    selector = new GeoSelector({parentElement: 'selectordiv'}, fedHierarchy);
+    selector = new GeoSelector({parentElement: 'selectordiv'}, fedHierarchy, geoSelectionChanged);
 }
 
 main();
-
-// const quantAttrDropdown = document.getElementById("quant-attr");
-// quantAttrDropdown.addEventListener('change', () => {
-//     choropleth.changeQuantAttr(quantAttrDropdown.value);
-// });
 
 function changeParliament(newParliament) {
     this.changeParliament(newParliament);
@@ -71,4 +67,13 @@ function changeAOI(aoiString) {
 function mapZoomed(transform) {
     choroplethUpper.zoomed(transform);
     choroplethLower.zoomed(transform);
+}
+
+function geoSelectionChanged(geography, wasAdded) {
+    if (wasAdded) {
+        selectedGeography = selectedGeography.union(geography);
+    } else {
+        selectedGeography = selectedGeography.difference(geography);
+    }
+    console.log(selectedGeography);
 }

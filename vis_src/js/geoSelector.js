@@ -5,8 +5,9 @@ export class GeoSelector {
     * Class constructor with basic chart configuration
     * @param _config {Object}
     * @param _fedHierarchy {Object}
+    * @param _geoSelectionChangedCallback {Function}
     */
-    constructor(_config, _fedHierarchy) {
+    constructor(_config, _fedHierarchy, _geoSelectionChangedCallback) {
         // Configuration object with defaults
         this.config = {
             parentElement: _config.parentElement,
@@ -23,7 +24,7 @@ export class GeoSelector {
         console.log(this.dataMap);
 
         topLevelList.selectAll('input')
-            .on("click", (event) => handleCheckboxClickEvent(event, this.dataMap));
+            .on("click", (event) => handleCheckboxClickEvent(event, this.dataMap, _geoSelectionChangedCallback));
 
         // from https://d3js.org/d3-selection/selecting, thanks!!
         d3.selection.prototype.checked = function(value) {
@@ -53,19 +54,19 @@ function addGroupRecursive(obj, parentUL, dataMap) {
     }
 }
 
-function handleCheckboxClickEvent(event, dataMap) {
+function handleCheckboxClickEvent(event, dataMap, geoSelectionChangedCallback) {
     const checkbox = event.target;
+    const fedsChanged = new Set();
     if (checkbox.hasAttribute('fedId')) {
         // Simple case: we're just adding or removing a FED from the selection.
         // TODO: notify main about the selection changing.
-        const changedSet = new Set([checkbox.getAttribute('fedId')]);
-        console.log(changedSet);
-        return;
-    }
+        fedsChanged.add(checkbox.getAttribute('fedId'));
+        // console.log(changedSet);
+    } else {
     // We need to change all our descendants to match our current state.
-    const fedsChanged = new Set();
-    handleCheckboxClickEventRecursive(checkbox.id, checkbox.checked, dataMap, fedsChanged);
-    console.log(fedsChanged);
+        handleCheckboxClickEventRecursive(checkbox.id, checkbox.checked, dataMap, fedsChanged);
+    }
+    geoSelectionChangedCallback(fedsChanged, checkbox.checked);
 }
 
 function handleCheckboxClickEventRecursive(checkboxId, checked, dataMap, fedsChanged) {
