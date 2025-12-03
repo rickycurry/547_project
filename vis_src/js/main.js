@@ -29,7 +29,7 @@ async function loadCandidates() {
 async function loadData() {
     const ro_years = await loadCandidates();
     ros = await loadROs(ro_years);
-    fedHierarchy = await d3.json('../data/fed_hierarchy.json');
+    fedHierarchy = await d3.json('../data/fed_hierarchy_complete.json');
     partiesMajor = await d3.csv('../data/candidates/lookup_tables/parties_major.csv', d3.autoType);
     partiesRaw = await d3.csv('../data/candidates/lookup_tables/parties_raw.csv', d3.autoType);
 }

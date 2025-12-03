@@ -36,7 +36,7 @@ export class GeoSelector {
 }
 
 function addGroupRecursive(obj, parentUL, dataMap) {
-    const checkboxElementId = `checkbox-${obj.name.replaceAll(' ', '')}`;
+    const checkboxElementId = `checkbox-${cleanNameForId(obj.name)}`;
     const listItem = parentUL.append('li');
 
     if (Object.hasOwn(obj, 'regions')) {
@@ -46,12 +46,20 @@ function addGroupRecursive(obj, parentUL, dataMap) {
         const childrenKeys = [];
         obj.regions.forEach(region => {
             addGroupRecursive(region, ul, dataMap);
-            childrenKeys.push(`checkbox-${region.name.replaceAll(' ', '')}`);
+            childrenKeys.push(`checkbox-${cleanNameForId(region.name)}`);
         });
         dataMap.set(checkboxElementId, childrenKeys);
     } else {
         listItem.html(`<input type='checkbox' id="${checkboxElementId}" fedId=${obj.id} />${obj.name}`);
     }
+}
+
+function cleanNameForId(str) {
+    return str.replaceAll(' ', '')
+        .replaceAll("'", '')
+        .replaceAll('.', '')
+        .replaceAll('(', '')
+        .replaceAll(')', '');
 }
 
 function handleCheckboxClickEvent(event, dataMap, geoSelectionChangedCallback) {
