@@ -1,9 +1,5 @@
 import "./external/d3.v7.js"
 
-// import {Runtime} from "https://cdn.jsdelivr.net/npm/@observablehq/runtime@4/dist/runtime.js";
-// import d3_colorLegend from "https://api.observablehq.com/@d3/color-legend.js?v=3";
-// import "./external/d3-color-legend.js"
-
 export class ChoroplethMap {
     /**
     * Class constructor with basic chart configuration
@@ -13,8 +9,9 @@ export class ChoroplethMap {
     * @param _majorPartiesLookup {Array}
     * @param _rawPartiesLookup {Array}
     * @param _mapZoomCallback {Function}
+    * @param _parliamentROMap {Map}
     */
-    constructor(_config, _geoData, _candidateData, _majorPartiesLookup, _rawPartiesLookup, _mapZoomCallback) {
+    constructor(_config, _geoData, _candidateData, _majorPartiesLookup, _rawPartiesLookup, _mapZoomCallback, _parliamentROMap) {
         // Configuration object with defaults
         this.config = {
             parentElement: _config.parentElement,
@@ -29,6 +26,7 @@ export class ChoroplethMap {
 
         this.candidatesGroupedByParliament = d3.group(_candidateData, d => d.parliament);
         this.ros = _geoData;
+        this.parliamentROMap = _parliamentROMap;
         this.majorPartiesLookup = _majorPartiesLookup;
         this.rawPartiesLookup = new Map();
         _rawPartiesLookup.forEach(d => this.rawPartiesLookup.set(d.id, d.party));
@@ -56,9 +54,10 @@ export class ChoroplethMap {
         this.updateVis();
     }
 
-    changeParliament(newParliament) {
+    changeParliament(newParliament, newSelectedGeography) {
         let vis = this;
         vis.currentParliament = newParliament;
+        vis.selectedFeds = newSelectedGeography;
         vis.updateVis();
     }
 
@@ -160,7 +159,7 @@ export class ChoroplethMap {
                     .style('display', 'block')
                     .style('left', (event.pageX + vis.config.tooltipPadding) + 'px')
                     .style('bottom', (window.innerHeight - event.pageY + vis.config.tooltipPadding) + 'px')
-                    .html(`<div class="tooltip-title">${d.properties.fedname}</div>
+                    .html(`<div class="tooltip-title">${d.properties.fedname} ${d.properties.id}</div>
                            <div class="tooltip-body">${vis.tooltipBodyFn(d)}`);
             })
             .on('mouseleave', () => { d3.select('#map-tooltip').style('display', 'none'); });
@@ -188,15 +187,8 @@ export class ChoroplethMap {
 
     selectRO() {
         let vis = this;
-        vis.currentRoIdx = 0;
-        // By now, candidates should be filtered to just one single parliament (and RO)
-        const roYear = vis.filteredCandidates[0].ro.toString();
-        for (const [i, ro] of vis.ros.entries()) {
-            if (ro.name.substring(3) === roYear) {
-                vis.currentRoIdx = i;
-                break;
-            }
-        }
+        const roYear = vis.parliamentROMap.get(vis.currentParliament).toString();
+        vis.currentRoIdx = vis.ros.map(ro => ro.name.slice(-4)).indexOf(roYear);
     }
 
     initValueMap() {
@@ -310,9 +302,4 @@ export class ChoroplethMap {
         const value = vis.valueMap.get(idInt);
         return vis.colourScale(value);
     }
-}
-
-async function renderLegend(el, colourScale) {
-    const legend = Legend(colourScale, {title: 'Test legend'});
-    console.log(legend);
 }

@@ -13,7 +13,7 @@ export class GeoSelector {
             parentElement: _config.parentElement,
         }
 
-        console.log(_fedHierarchy);
+        // console.log(_fedHierarchy);
         this.dataMap = new Map();
 
         const parentListDiv = d3.select(`#${this.config.parentElement}`);
@@ -21,7 +21,7 @@ export class GeoSelector {
             .attr('id', 'selector-list');
         _fedHierarchy.provinces.forEach(province => addGroupRecursive(province, topLevelList, this.dataMap));
 
-        console.log(this.dataMap);
+        // console.log(this.dataMap);
 
         topLevelList.selectAll('input')
             .on("click", (event) => handleCheckboxClickEvent(event, this.dataMap, _geoSelectionChangedCallback));

@@ -6,12 +6,16 @@ import { Barplot } from "./barplot.js"
 import { Heatmap } from "./heatmap.js";
 import { GeoSelector } from "./geoSelector.js";
 
-let ros, candidates, partiesMajor, partiesRaw, fedHierarchy;
+// Static data...
+let ros, candidates, partiesMajor, partiesRaw, fedHierarchy, historicOverlaps;
+let parliamentROMapping;
+// Vis instances...
 let choroplethUpper, choroplethLower;
 let timelineSliderUpper, timelineSliderLower;
 let barPlotUpper, barPlotLower;
 let heatmap;
 let selector;
+// Current state...
 let selectedGeography = new Set();
 
 const roRoot = "../data/feds/mapshaper_simplified_rewound_4326/";
@@ -23,13 +27,27 @@ async function loadROData(year) {
 async function loadCandidates() {
     candidates = await d3.csv('../data/candidates/candidates_final.csv', d3.autoType);
     const ro_years = new Set(d3.map(candidates, d => d.ro));
+    parliamentROMapping = new Map();
+    candidates.forEach(d => {
+        if (!parliamentROMapping.has(d.parliament)) {
+            parliamentROMapping.set(d.parliament, d.ro);
+        }
+    });
+    // console.log(parliamentROMapping);
     return Array.from(ro_years);
 }
 
 async function loadData() {
     const ro_years = await loadCandidates();
     ros = await loadROs(ro_years);
+    // Convert all FED IDs to string for consistency (some are string, some are numbers)
+    ros.forEach(ro => ro.features.forEach(fed => {
+        if (typeof fed.properties.id !== 'string') {
+            fed.properties.id = fed.properties.id.toString();
+        }}));
     fedHierarchy = await d3.json('../data/fed_hierarchy_complete.json');
+    historicOverlaps = await d3.json('../data/feds/historic_overlaps.json');
+    console.log(historicOverlaps);
     partiesMajor = await d3.csv('../data/candidates/lookup_tables/parties_major.csv', d3.autoType);
     partiesRaw = await d3.csv('../data/candidates/lookup_tables/parties_raw.csv', d3.autoType);
 }
@@ -38,10 +56,11 @@ async function loadROs(ro_years) {
     return Promise.all(ro_years.map(loadROData));
 }
 
+
 async function main() {
     await loadData();
-    choroplethUpper = new ChoroplethMap({parentElement: 'choroplethdiv-upper', currentParliament: 1}, ros, candidates, partiesMajor, partiesRaw, mapZoomed);
-    choroplethLower = new ChoroplethMap({parentElement: 'choroplethdiv-lower'}, ros, candidates, partiesMajor, partiesRaw, mapZoomed);
+    choroplethUpper = new ChoroplethMap({parentElement: 'choroplethdiv-upper', currentParliament: 1}, ros, candidates, partiesMajor, partiesRaw, mapZoomed, parliamentROMapping);
+    choroplethLower = new ChoroplethMap({parentElement: 'choroplethdiv-lower'}, ros, candidates, partiesMajor, partiesRaw, mapZoomed, parliamentROMapping);
     timelineSliderUpper = new TimelineSlider({parentElement: 'sliderdiv-upper', isUpper: true, margin: {top: 40, right: 70, bottom: 5, left: 78}, initializeMin: true}, candidates, changeParliament.bind(choroplethUpper));
     timelineSliderLower = new TimelineSlider({parentElement: 'sliderdiv-lower', isUpper: false, margin: {top: 5, right: 70, bottom: 30, left: 78}}, candidates, changeParliament.bind(choroplethLower));
     barPlotUpper = new Barplot({parentElement: 'barplotdiv-upper'}, candidates, partiesMajor);
@@ -53,7 +72,8 @@ async function main() {
 main();
 
 function changeParliament(newParliament) {
-    this.changeParliament(newParliament);
+    const historicSelectedGeography = applySelectedGeoToHistoricRO(newParliament);
+    this.changeParliament(newParliament, historicSelectedGeography);
 }
 
 function changeAOI(aoiString) {
@@ -70,12 +90,21 @@ function mapZoomed(transform) {
 }
 
 function geoSelectionChanged(geography, wasAdded) {
-    if (wasAdded) {
-        selectedGeography = selectedGeography.union(geography);
-    } else {
-        selectedGeography = selectedGeography.difference(geography);
+    selectedGeography = wasAdded ? selectedGeography.union(geography) : selectedGeography.difference(geography);
+    choroplethUpper.changeSelectedFEDs(applySelectedGeoToHistoricRO(choroplethUpper.currentParliament));
+    choroplethLower.changeSelectedFEDs(applySelectedGeoToHistoricRO(choroplethLower.currentParliament));
+}
+
+function applySelectedGeoToHistoricRO(parliament) {
+    const ro = parliamentROMapping.get(parliament);
+    if (ro === 2013) {
+        return selectedGeography;
     }
-    // console.log(selectedGeography);
-    choroplethUpper.changeSelectedFEDs(selectedGeography);
-    choroplethLower.changeSelectedFEDs(selectedGeography);
+    const historicSelectedGeography = new Set();
+    const roFedMapping = historicOverlaps[ro];
+    selectedGeography.forEach(fed => {
+        const overlappedHistoricFeds = roFedMapping[fed];
+        overlappedHistoricFeds.forEach(historicFed => historicSelectedGeography.add(historicFed));
+    });
+    return historicSelectedGeography;
 }

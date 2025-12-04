@@ -17,7 +17,6 @@ export class Heatmap {
             tooltipPadding: _config.tooltipPadding || 10,
         }
 
-        this.currentParliament = _config.currentParliament || 44;
         this.currentByElection = _config.currentByElection || 0;
 
         this.candidates = _candidateData.filter(d => d.type_elxn === this.currentByElection);
@@ -142,7 +141,7 @@ export class Heatmap {
                                            .reduce((acc, candidate) => acc + candidate.elected, 0);
                 return {seatShare: winningPartySeats / allSeats, winningParty: winningParty};
             }, d => d.parliament);
-        console.log(winnerAndSeatShare);
+        // console.log(winnerAndSeatShare);
         winnerAndSeatShare.forEach(d => vis.data.push({
             val: d[1].seatShare, 
             parliament: d[0],
