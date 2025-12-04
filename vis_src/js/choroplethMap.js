@@ -20,6 +20,7 @@ export class ChoroplethMap {
             parentElement: _config.parentElement,
             margin: _config.margin || {top: 10, right: 10, bottom: 10, left: 10},
             tooltipPadding: _config.tooltipPadding || 10,
+            maxZoom: _config.maxZoom || 60,
         }
 
         this.currentParliament = _config.currentParliament || 44;
@@ -32,7 +33,6 @@ export class ChoroplethMap {
         _rawPartiesLookup.forEach(d => this.rawPartiesLookup.set(d.id, d.party));
         this.mapZoomCallback = _mapZoomCallback;
 
-        // this.projection = d3.geoMercator();
         this.projection = d3.geoConicConformal()
             .parallels([30, 30])
             .rotate([91.86, -63.390675]);
@@ -41,7 +41,7 @@ export class ChoroplethMap {
             .projection(this.projection);
         
         this.zoom = d3.zoom()
-            .scaleExtent([1, 50])
+            .scaleExtent([1, this.config.maxZoom])
             .on("zoom", (event) => this.mapZoomCallback(event));
 
         this.tooltipBodyFn = () => "";
@@ -62,17 +62,39 @@ export class ChoroplethMap {
 
     changeSelectedFEDs(selectedFedsSet) {
         let vis = this;
-        const finalRo = vis.ros[vis.ros.length - 1];
+        // Get all the paths from the last RO, but don't render them -- 
+        // we just want to figure out the total bounding box containing all of them.
+        // Most of the zoom math code taken directly from 
+        // https://observablehq.com/@d3/zoom-to-bounding-box?collection=%40d3%2Fd3-zoom
         if (selectedFedsSet.size === 0) {
-            vis.projection.fitExtent([[0, 0], [vis.width, vis.height]], 
-                                 finalRo);
-        } else {
-            const roCopy = Object.assign({}, finalRo);
-            roCopy.features = roCopy.features.filter(d => selectedFedsSet.has(d.properties.id));
-            vis.projection.fitExtent([[0, 0], [vis.width, vis.height]], 
-                                 roCopy);
+            vis.svg.call(
+                vis.zoom.transform,
+                d3.zoomIdentity,
+                d3.zoomTransform(vis.svg.node()).invert([vis.width / 2, vis.height / 2])
+            );
+            return;
         }
-        vis.renderVis();
+
+        const finalRo = vis.ros[vis.ros.length - 1];
+        const roCopy = Object.assign({}, finalRo);
+        roCopy.features = roCopy.features.filter(d => selectedFedsSet.has(d.properties.id));
+        let xMin = Infinity, yMin = Infinity;
+        let xMax = -Infinity, yMax = -Infinity;
+        roCopy.features.forEach(feature => {
+            const [[x0, y0], [x1, y1]] = vis.path.bounds(feature);
+            xMin = Math.min(xMin, x0);
+            yMin = Math.min(yMin, y0);
+            xMax = Math.max(xMax, x1);
+            yMax = Math.max(yMax, y1);
+        });
+
+        vis.svg.call(
+            vis.zoom.transform,
+            d3.zoomIdentity
+                .translate(vis.width / 2, vis.height / 2)
+                .scale(Math.min(vis.config.maxZoom, 0.9 / Math.max((xMax - xMin) / vis.width, (yMax - yMin) / vis.height)))
+                .translate(-(xMin + xMax) / 2, -(yMin + yMax) / 2)
+        );
     }
 
     initVis() {
