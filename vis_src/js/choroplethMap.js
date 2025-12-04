@@ -21,6 +21,7 @@ export class ChoroplethMap {
             margin: _config.margin || {top: 10, right: 10, bottom: 10, left: 10},
             tooltipPadding: _config.tooltipPadding || 10,
             maxZoom: _config.maxZoom || 60,
+            transitionDuration: _config.transitionDuration || 750,
         }
 
         this.currentParliament = _config.currentParliament || 44;
@@ -69,21 +70,22 @@ export class ChoroplethMap {
         // Most of the zoom math code taken directly from 
         // https://observablehq.com/@d3/zoom-to-bounding-box?collection=%40d3%2Fd3-zoom
         if (selectedFedsSet.size === 0) {
-            vis.svg.call(
-                vis.zoom.transform,
-                d3.zoomIdentity,
-                d3.zoomTransform(vis.svg.node()).invert([vis.width / 2, vis.height / 2])
-            );
+            vis.svg.transition()
+                .duration(vis.config.transitionDuration)
+                .call(
+                    vis.zoom.transform,
+                    d3.zoomIdentity,
+                    d3.zoomTransform(vis.svg.node()).invert([vis.width / 2, vis.height / 2])
+                );
             vis.renderVis();
             return;
         }
 
         const finalRo = vis.ros[vis.ros.length - 1];
-        const roCopy = Object.assign({}, finalRo);
-        roCopy.features = roCopy.features.filter(d => selectedFedsSet.has(d.properties.id));
+        const features = finalRo.features.filter(d => selectedFedsSet.has(d.properties.id));
         let xMin = Infinity, yMin = Infinity;
         let xMax = -Infinity, yMax = -Infinity;
-        roCopy.features.forEach(feature => {
+        features.forEach(feature => {
             const [[x0, y0], [x1, y1]] = vis.path.bounds(feature);
             xMin = Math.min(xMin, x0);
             yMin = Math.min(yMin, y0);
@@ -91,13 +93,15 @@ export class ChoroplethMap {
             yMax = Math.max(yMax, y1);
         });
 
-        vis.svg.call(
-            vis.zoom.transform,
-            d3.zoomIdentity
-                .translate(vis.width / 2, vis.height / 2)
-                .scale(Math.min(vis.config.maxZoom, 0.9 / Math.max((xMax - xMin) / vis.width, (yMax - yMin) / vis.height)))
-                .translate(-(xMin + xMax) / 2, -(yMin + yMax) / 2)
-        );
+        vis.svg.transition()
+            .duration(vis.config.transitionDuration)
+            .call(
+                vis.zoom.transform,
+                d3.zoomIdentity
+                    .translate(vis.width / 2, vis.height / 2)
+                    .scale(Math.min(vis.config.maxZoom, 0.9 / Math.max((xMax - xMin) / vis.width, (yMax - yMin) / vis.height)))
+                    .translate(-(xMin + xMax) / 2, -(yMin + yMax) / 2)
+            );
         vis.renderVis();
     }
 
