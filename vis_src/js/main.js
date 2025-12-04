@@ -75,5 +75,7 @@ function geoSelectionChanged(geography, wasAdded) {
     } else {
         selectedGeography = selectedGeography.difference(geography);
     }
-    console.log(selectedGeography);
+    // console.log(selectedGeography);
+    choroplethUpper.changeSelectedFEDs(selectedGeography);
+    choroplethLower.changeSelectedFEDs(selectedGeography);
 }

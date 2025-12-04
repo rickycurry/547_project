@@ -41,7 +41,7 @@ export class ChoroplethMap {
             .projection(this.projection);
         
         this.zoom = d3.zoom()
-            .scaleExtent([1, 40])
+            .scaleExtent([1, 50])
             .on("zoom", (event) => this.mapZoomCallback(event));
 
         this.tooltipBodyFn = () => "";
@@ -58,6 +58,21 @@ export class ChoroplethMap {
         let vis = this;
         vis.currentParliament = newParliament;
         vis.updateVis();
+    }
+
+    changeSelectedFEDs(selectedFedsSet) {
+        let vis = this;
+        const finalRo = vis.ros[vis.ros.length - 1];
+        if (selectedFedsSet.size === 0) {
+            vis.projection.fitExtent([[0, 0], [vis.width, vis.height]], 
+                                 finalRo);
+        } else {
+            const roCopy = Object.assign({}, finalRo);
+            roCopy.features = roCopy.features.filter(d => selectedFedsSet.has(d.properties.id));
+            vis.projection.fitExtent([[0, 0], [vis.width, vis.height]], 
+                                 roCopy);
+        }
+        vis.renderVis();
     }
 
     initVis() {
