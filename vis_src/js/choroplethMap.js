@@ -32,6 +32,7 @@ export class ChoroplethMap {
         this.rawPartiesLookup = new Map();
         _rawPartiesLookup.forEach(d => this.rawPartiesLookup.set(d.id, d.party));
         this.mapZoomCallback = _mapZoomCallback;
+        this.selectedFeds = new Set();
 
         this.projection = d3.geoConicConformal()
             .parallels([30, 30])
@@ -62,6 +63,7 @@ export class ChoroplethMap {
 
     changeSelectedFEDs(selectedFedsSet) {
         let vis = this;
+        vis.selectedFeds = selectedFedsSet;
         // Get all the paths from the last RO, but don't render them -- 
         // we just want to figure out the total bounding box containing all of them.
         // Most of the zoom math code taken directly from 
@@ -72,6 +74,7 @@ export class ChoroplethMap {
                 d3.zoomIdentity,
                 d3.zoomTransform(vis.svg.node()).invert([vis.width / 2, vis.height / 2])
             );
+            vis.renderVis();
             return;
         }
 
@@ -95,6 +98,7 @@ export class ChoroplethMap {
                 .scale(Math.min(vis.config.maxZoom, 0.9 / Math.max((xMax - xMin) / vis.width, (yMax - yMin) / vis.height)))
                 .translate(-(xMin + xMax) / 2, -(yMin + yMax) / 2)
         );
+        vis.renderVis();
     }
 
     initVis() {
@@ -146,6 +150,7 @@ export class ChoroplethMap {
                 .attr("d", vis.path)
                 .attr("debugname", d => d.properties.fedname)
                 .attr("fill", d => vis.getColour(d))
+                .classed("selected", d => vis.selectedFeds.has(d.properties.id))
             .on("mousemove", (event, d) => {
                 d3.select('#map-tooltip')
                     .style('display', 'block')

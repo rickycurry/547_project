@@ -62,10 +62,18 @@ div {
     font-size: 13px;
 }
 
+/* Map */
 path {
     stroke: #444;
     stroke-linejoin: "round";
     vector-effect: non-scaling-stroke;
+    fill-opacity: 80%;
+}
+
+path.selected {
+    stroke: #000;
+    stroke-width: 2px;
+    fill-opacity: 100%;
 }
 
 path:hover {
