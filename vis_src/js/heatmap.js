@@ -15,9 +15,13 @@ export class Heatmap {
             parentElement: _config.parentElement,
             margin: _config.margin || {top: 0, right: 50, bottom: 10, left: 55},
             tooltipPadding: _config.tooltipPadding || 10,
+            transitionDuration: _config.transitionDuration || 0,
         }
 
         this.currentByElection = _config.currentByElection || 0;
+        // This gets overwritten with the correct (config) value after our first update
+        // to avoid a ridiculous opening animation (all rectangles expand from (0, 0))
+        this.transitionDuration = 0;
 
         this.candidates = _candidateData.filter(d => d.type_elxn === this.currentByElection);
         this.majorPartiesLookup = _majorPartiesLookup;
@@ -79,6 +83,7 @@ export class Heatmap {
 
     changeSelectedGeography(selectedGeoByRO) {
         let vis = this;
+        vis.transitionDuration = vis.config.transitionDuration;
         vis.selectedGeoByRo = selectedGeoByRO;
         vis.updateVis();
     }
@@ -105,7 +110,7 @@ export class Heatmap {
         vis.chart.selectAll('rect')
             .data(vis.data, d => `${d.parliament} ${d.rowLabel}`)
             .join('rect')
-            .transition().duration(0)
+            .transition().duration(vis.transitionDuration)
             .attr('y', d => vis.cellY(d))
             .attr('x', d => vis.x(d.parliament))
             .attr('width', vis.x.bandwidth())

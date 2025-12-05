@@ -109,7 +109,6 @@ function transformSelectedGeoToHistoricRO(ro) {
     }
     const historicSelectedGeography = new Set();
     const roFedMapping = historicOverlaps[ro];
-    console.log(ro);
     selectedGeography.forEach(fed => {
         const overlappedHistoricFeds = roFedMapping[fed];
         overlappedHistoricFeds.forEach(historicFed => historicSelectedGeography.add(historicFed));
