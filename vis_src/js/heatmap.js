@@ -27,6 +27,9 @@ export class Heatmap {
         this.majorPartiesLookup = _majorPartiesLookup;
         this.rawPartiesLookup = new Map();
         this.selectedGeoByRo = null;
+        this.rowLabels = ['Winner and\nseat share', 'Winner\nvote share', 'Non-male', 'Indigenous', 'Age', 'Count'];
+        this.selectedRowLabel = this.rowLabels[0];
+        this.selectedParliaments = new Set([1, 44]);
         _rawPartiesLookup.forEach(d => this.rawPartiesLookup.set(d.id, d.party));
 
         this.changeAOICallback = _changeAOICallback;
@@ -53,8 +56,6 @@ export class Heatmap {
         vis.chart = vis.svg.append('g')
             .classed("chart", true)
             .attr('transform', `translate(${vis.config.margin.left},${vis.config.margin.top})`);
-
-        vis.rowLabels = ['Winner and\nseat share', 'Winner\nvote share', 'Non-male', 'Indigenous', 'Age', 'Count'];
 
         // This will change in the future depending on which "mode" the map is in, perhaps?
         vis.colourScheme = d3.interpolateBlues;
@@ -88,6 +89,12 @@ export class Heatmap {
         vis.updateVis();
     }
 
+    changeParliaments(selectedParliaments) {
+        let vis = this;
+        vis.selectedParliaments = selectedParliaments;
+        vis.renderVis();
+    }
+
     updateVis() {
         let vis = this;
         vis.filterGeography();
@@ -110,14 +117,19 @@ export class Heatmap {
         vis.chart.selectAll('rect')
             .data(vis.data, d => `${d.parliament} ${d.rowLabel}`)
             .join('rect')
-            .transition().duration(vis.transitionDuration)
+            // .transition().duration(vis.transitionDuration)
             .attr('y', d => vis.cellY(d))
             .attr('x', d => vis.x(d.parliament))
             .attr('width', vis.x.bandwidth())
             .attr('height', d => vis.cellHeight(d))
+            .classed('selected', d => d.rowLabel === vis.selectedRowLabel && vis.selectedParliaments.has(d.parliament))
             .style('fill', d => vis.colourScales.get(d.rowLabel)(d.colourOverride === null ? d.val : d.colourOverride));
         vis.chart.selectAll('rect')
-            .on("click", (event, d) => vis.changeAOICallback(d.rowLabel))
+            .on("click", (event, d) => {
+                vis.selectedRowLabel = d.rowLabel;
+                vis.changeAOICallback(d.rowLabel);
+                vis.renderVis();
+            })
             .on("mousemove", (event, d) => {
                 d3.select('#map-tooltip')
                     .style('display', 'block')

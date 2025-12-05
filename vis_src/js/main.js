@@ -72,6 +72,8 @@ main();
 
 function changeParliament(newParliament) {
     const historicSelectedGeography = transformSelectedGeoToHistoricRO(parliamentROMapping.get(newParliament));
+    const selectedParliaments = new Set([timelineSliderUpper.currentParliament, timelineSliderLower.currentParliament]);
+    heatmap.changeParliaments(selectedParliaments);
     this.changeParliament(newParliament, historicSelectedGeography);
 }
 

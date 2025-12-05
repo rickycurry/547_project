@@ -21,6 +21,7 @@ export class TimelineSlider {
 
         this.candidates = _candidateData;
         this.changeDateCallback = _changeDateCallback;
+        this.currentParliament = this.config.initializeMin ? 1 : 44;
         
         this.initVis();
     }
@@ -74,14 +75,11 @@ export class TimelineSlider {
             .height(vis.height)
             .tickFormat(d => vis.parliamentToYearMap.get(d))
             .tickValues(parliaments)
-            .on("onchange", vis.changeDateCallback);
+            .on("onchange", (val) => {
+                vis.currentParliament = val;
+                vis.changeDateCallback(val);
+            });
 
         vis.svg.call(vis.slider);
-
-        // d3.selectAll('text')
-        //     .style('text-anchor', 'end')
-        //     .attr("dx", "-1.1em")
-        //     .attr("dy", "-0.8em")
-        //     .attr('transform', "rotate(-65)");
     }
 }

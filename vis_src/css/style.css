@@ -80,3 +80,13 @@ path:hover {
     stroke: #000;
     stroke-width: 2px;
 }
+
+/* Heatmap */
+rect {
+    stroke: #aaa;
+    stroke-width: 0.4pt;
+}
+rect.selected {
+    stroke: #000;
+    stroke-width: 1pt;
+}
