@@ -47,7 +47,7 @@ async function loadData() {
         }}));
     fedHierarchy = await d3.json('../data/fed_hierarchy_complete.json');
     historicOverlaps = await d3.json('../data/feds/historic_overlaps.json');
-    console.log(historicOverlaps);
+    // console.log(historicOverlaps);
     partiesMajor = await d3.csv('../data/candidates/lookup_tables/parties_major.csv', d3.autoType);
     partiesRaw = await d3.csv('../data/candidates/lookup_tables/parties_raw.csv', d3.autoType);
 }
@@ -55,7 +55,6 @@ async function loadData() {
 async function loadROs(ro_years) {
     return Promise.all(ro_years.map(loadROData));
 }
-
 
 async function main() {
     await loadData();
@@ -72,7 +71,7 @@ async function main() {
 main();
 
 function changeParliament(newParliament) {
-    const historicSelectedGeography = applySelectedGeoToHistoricRO(newParliament);
+    const historicSelectedGeography = transformSelectedGeoToHistoricRO(parliamentROMapping.get(newParliament));
     this.changeParliament(newParliament, historicSelectedGeography);
 }
 
@@ -91,17 +90,26 @@ function mapZoomed(transform) {
 
 function geoSelectionChanged(geography, wasAdded) {
     selectedGeography = wasAdded ? selectedGeography.union(geography) : selectedGeography.difference(geography);
-    choroplethUpper.changeSelectedFEDs(applySelectedGeoToHistoricRO(choroplethUpper.currentParliament));
-    choroplethLower.changeSelectedFEDs(applySelectedGeoToHistoricRO(choroplethLower.currentParliament));
+    // Update maps to show highlighting.
+    choroplethUpper.changeSelectedFEDs(transformSelectedGeoToHistoricRO(parliamentROMapping.get(choroplethUpper.currentParliament)));
+    choroplethLower.changeSelectedFEDs(transformSelectedGeoToHistoricRO(parliamentROMapping.get(choroplethLower.currentParliament)));
+    // Also send all the ROs' transformed selected geography to the heatmap.
+    const allTransformedSelectedGeo = new Map();
+    ros.forEach(ro => {
+        const roNumber = Number(ro.name.slice(-4));
+        const transformedFedsAsStrings = transformSelectedGeoToHistoricRO(roNumber);
+        allTransformedSelectedGeo.set(roNumber, new Set(Array.from(transformedFedsAsStrings).map(d => Number(d))));
+    });
+    heatmap.changeSelectedGeography(selectedGeography.size > 0 ? allTransformedSelectedGeo : null);
 }
 
-function applySelectedGeoToHistoricRO(parliament) {
-    const ro = parliamentROMapping.get(parliament);
+function transformSelectedGeoToHistoricRO(ro) {
     if (ro === 2013) {
         return selectedGeography;
     }
     const historicSelectedGeography = new Set();
     const roFedMapping = historicOverlaps[ro];
+    console.log(ro);
     selectedGeography.forEach(fed => {
         const overlappedHistoricFeds = roFedMapping[fed];
         overlappedHistoricFeds.forEach(historicFed => historicSelectedGeography.add(historicFed));

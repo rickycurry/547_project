@@ -22,6 +22,7 @@ export class Heatmap {
         this.candidates = _candidateData.filter(d => d.type_elxn === this.currentByElection);
         this.majorPartiesLookup = _majorPartiesLookup;
         this.rawPartiesLookup = new Map();
+        this.selectedGeoByRo = null;
         _rawPartiesLookup.forEach(d => this.rawPartiesLookup.set(d.id, d.party));
 
         this.changeAOICallback = _changeAOICallback;
@@ -76,24 +77,41 @@ export class Heatmap {
         vis.updateVis();
     }
 
+    changeSelectedGeography(selectedGeoByRO) {
+        let vis = this;
+        vis.selectedGeoByRo = selectedGeoByRO;
+        vis.updateVis();
+    }
+
     updateVis() {
         let vis = this;
-        // vis.filterGeography(); TODO
+        vis.filterGeography();
         vis.initData();
         vis.renderVis();
+    }
+
+    filterGeography() {
+        let vis = this;
+        if (vis.selectedGeoByRo === null) {
+            vis.filteredCandidates = vis.candidates;
+        } else {
+            vis.filteredCandidates = vis.candidates.filter(d => vis.selectedGeoByRo.get(d.ro).has(d.fed_id));
+        }
     }
 
     renderVis() {
         let vis = this;
 
-        vis.chart.selectAll()
-            .data(vis.data)
+        vis.chart.selectAll('rect')
+            .data(vis.data, d => `${d.parliament} ${d.rowLabel}`)
             .join('rect')
+            .transition().duration(0)
             .attr('y', d => vis.cellY(d))
             .attr('x', d => vis.x(d.parliament))
             .attr('width', vis.x.bandwidth())
             .attr('height', d => vis.cellHeight(d))
-            .style('fill', d => vis.colourScales.get(d.rowLabel)(d.colourOverride === null ? d.val : d.colourOverride))
+            .style('fill', d => vis.colourScales.get(d.rowLabel)(d.colourOverride === null ? d.val : d.colourOverride));
+        vis.chart.selectAll('rect')
             .on("click", (event, d) => vis.changeAOICallback(d.rowLabel))
             .on("mousemove", (event, d) => {
                 d3.select('#map-tooltip')
@@ -134,7 +152,7 @@ export class Heatmap {
         // Will combine outcome and margin eventually. For now, calculate vote share for the winning party??
         let rowIdx = 0;
 
-        const winnerAndSeatShare = d3.rollups(vis.candidates, D => {
+        const winnerAndSeatShare = d3.rollups(vis.filteredCandidates, D => {
                 const winningParty = D[0].gov_major_group;
                 const allSeats = D.reduce((acc, candidate) => acc + candidate.elected, 0);
                 const winningPartySeats = D.filter(d => d.party_major_group_cleaned === winningParty)
@@ -155,7 +173,7 @@ export class Heatmap {
                 vis.majorPartiesLookup.map(d => d.colour))
                 .unknown('#000'));
 
-        const winningPartyPopularVote = d3.rollups(vis.candidates, D => {
+        const winningPartyPopularVote = d3.rollups(vis.filteredCandidates, D => {
                 const winningParty = D[0].gov_major_group;
                 const allVotes = D.reduce((acc, candidate) => acc + candidate.votes, 0);
                 const winningPartyVotes = D.filter(d => d.party_major_group_cleaned === winningParty)
@@ -165,25 +183,25 @@ export class Heatmap {
         winningPartyPopularVote.forEach(d => vis.data.push(makeDataEntry(d, vis.rowLabels[rowIdx], true)));
         vis.colourScales.set(vis.rowLabels[rowIdx++], vis.getSequentialScale(winningPartyPopularVote));
 
-        const nonMale = d3.rollups(vis.candidates, 
+        const nonMale = d3.rollups(vis.filteredCandidates, 
                                    D => D.filter(d => d.gender !== 'M').length / D.length,
                                    d => d.parliament);
         nonMale.forEach(d => vis.data.push(makeDataEntry(d, vis.rowLabels[rowIdx])));
         vis.colourScales.set(vis.rowLabels[rowIdx++], vis.getSequentialScale(nonMale));
 
-        const indigenous = d3.rollups(vis.candidates, 
+        const indigenous = d3.rollups(vis.filteredCandidates, 
                                       D => D.filter(d => d.indigenousorigins === 1).length / D.length,
                                       d => d.parliament);
         indigenous.forEach(d => vis.data.push(makeDataEntry(d, vis.rowLabels[rowIdx])));
         vis.colourScales.set(vis.rowLabels[rowIdx++], vis.getSequentialScale(indigenous));        
 
-        const age = d3.rollups(vis.candidates, 
+        const age = d3.rollups(vis.filteredCandidates, 
                                D => d3.mean(D, d => d.age_at_election),
                                d => d.parliament);
         age.forEach(d => vis.data.push(makeDataEntry(d, vis.rowLabels[rowIdx])));
         vis.colourScales.set(vis.rowLabels[rowIdx++], vis.getSequentialScale(age));        
 
-        const count = d3.rollups(vis.candidates, D => {
+        const count = d3.rollups(vis.filteredCandidates, D => {
                 // D contains all candidates for a given election.
                 // We want to now group by FED and take the mean (ignoring FEDs with 0 candidates).
                 const fedCandidateCounts = d3.rollups(D, 
@@ -202,11 +220,6 @@ export class Heatmap {
                 d3.max(dataArray, d => d[1])
             ], vis.colourScheme);
     }
-}
-
-async function renderLegend(el, colourScale) {
-    const legend = Legend(colourScale, {title: 'Test legend'});
-    console.log(legend);
 }
 
 function makeDataEntry(_datum, _label, _scaleHeight = false, _colourOverride = null) {
