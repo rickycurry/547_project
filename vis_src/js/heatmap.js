@@ -164,7 +164,7 @@ export class Heatmap {
                         if (domain.length !== 2) {
                             return '';
                         }
-                        if (domain[0] < 1 && domain[1] < 1) {
+                        if (domain[0] <= 1 && domain[1] <= 1) {
                             return `${Math.round(domain[0] * 100)}–${Math.round(domain[1] * 100)}%`;
                         }
                         return `${Math.round(domain[0])}–${Math.round(domain[1])}`
