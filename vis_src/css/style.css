@@ -82,11 +82,26 @@ path:hover {
 }
 
 /* Heatmap */
-rect {
+/* rect {
     stroke: #aaa;
     stroke-width: 0.4pt;
+} */
+.cell {
+    stroke: #555;
+    stroke-width: 0.6pt;
 }
-rect.selected {
+
+.cell.selected {
     stroke: #000;
-    stroke-width: 1pt;
+    stroke-width: 1.5pt;
 }
+
+.heatmap.bar {
+    stroke-width: 0pt;
+}
+
+.cell.window {
+    fill-opacity: 0%;
+}
+
+/* rect. */

@@ -113,17 +113,31 @@ export class Heatmap {
 
     renderVis() {
         let vis = this;
+        vis.chart.selectAll('.bar')
+            .data(vis.data.filter(d => vis.rowLabels.slice(0, 2).includes(d.rowLabel)), d => `${d.parliament} ${d.rowLabel}`)
+            .join('rect')
+            // .transition().duration(vis.transitionDuration)
+            .attr('y', d => vis.barY(d))
+            .attr('x', d => vis.x(d.parliament))
+            .attr('width', vis.x.bandwidth())
+            .attr('height', d => vis.barHeight(d))
+            .style('fill', d => vis.colourScales.get(d.rowLabel)(d.colourOverride === null ? d.val : d.colourOverride))
+            .classed('heatmap', true)
+            .classed('bar', true);
 
-        vis.chart.selectAll('rect')
+        vis.chart.selectAll('.cell')
             .data(vis.data, d => `${d.parliament} ${d.rowLabel}`)
             .join('rect')
             // .transition().duration(vis.transitionDuration)
-            .attr('y', d => vis.cellY(d))
+            .attr('y', d => vis.y(d.rowLabel))
             .attr('x', d => vis.x(d.parliament))
             .attr('width', vis.x.bandwidth())
-            .attr('height', d => vis.cellHeight(d))
-            .classed('selected', d => d.rowLabel === vis.selectedRowLabel && vis.selectedParliaments.has(d.parliament))
-            .style('fill', d => vis.colourScales.get(d.rowLabel)(d.colourOverride === null ? d.val : d.colourOverride));
+            .attr('height', vis.y.bandwidth())
+            .style('fill', d => vis.colourScales.get(d.rowLabel)(d.colourOverride === null ? d.val : d.colourOverride))
+            .classed('cell', true)
+            .classed('window', d => d.scaleHeight)
+            .classed('selected', d => d.rowLabel === vis.selectedRowLabel && vis.selectedParliaments.has(d.parliament));
+
         vis.chart.selectAll('rect')
             .on("click", (event, d) => {
                 vis.selectedRowLabel = d.rowLabel;
@@ -143,22 +157,12 @@ export class Heatmap {
         // renderLegend(vis.chart, vis.colourScale);
     }
 
-    cellHeight(d) {
-        let vis = this;
-        if (d.scaleHeight) {
-            return vis.y.bandwidth() * d.val;
-        } else {
-            return vis.y.bandwidth();
-        }
+    barHeight(d) {
+        return this.y.bandwidth() * d.val;
     }
 
-    cellY(d) {
-        let vis = this;
-        if (d.scaleHeight) {
-            return vis.y(d.rowLabel) + (vis.y.bandwidth() * (1 - d.val));
-        } else {
-            return vis.y(d.rowLabel);
-        }
+    barY(d) {
+        return this.y(d.rowLabel) + (this.y.bandwidth() * (1 - d.val));
     }
 
     initData() {
