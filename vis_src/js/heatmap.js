@@ -151,18 +151,27 @@ export class Heatmap {
             // magic number
             .attr('transform', (d, i) => `translate(${vis.width - 100}, ${vis.y(vis.rowLabels[i])})`)
             .attr('class', 'legend-text')
-            // .attr('x', (d, i) => vis.width - 100)
-            .append('text')
-            .attr('dy', vis.y.bandwidth() / 2 + 4)
-            .text(d => {
-                const domain = d.domain();
-                if (domain.length !== 2) {
-                    return '';
+            .each(function(d) {
+                let parentG = d3.select(this);
+                let text = parentG
+                    .select('text');
+                if (text.empty()) {
+                    text = parentG.append('text');
                 }
-                if (domain[0] < 1 && domain[1] < 1) {
-                    return `${Math.round(domain[0] * 100)}–${Math.round(domain[1] * 100)}%`
-                }
-                return `${Math.round(domain[0])}–${Math.round(domain[1])}`})
+                text.attr('dy', vis.y.bandwidth() / 2 + 4)
+                    .text(() => {
+                        const domain = d.domain();
+                        if (domain.length !== 2) {
+                            return '';
+                        }
+                        if (domain[0] < 1 && domain[1] < 1) {
+                            return `${Math.round(domain[0] * 100)}–${Math.round(domain[1] * 100)}%`;
+                        }
+                        return `${Math.round(domain[0])}–${Math.round(domain[1])}`
+                    });
+
+            });
+
 
         vis.chart.selectAll('rect')
             .on("click", (event, d) => {
