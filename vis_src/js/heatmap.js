@@ -79,6 +79,9 @@ export class Heatmap {
             .call(vis.yAxis);
             // .style('vertical-align', 'middle');
 
+        vis.chart.append("g")
+            .attr("class", "legend-g");
+
         vis.updateVis();
     }
 
@@ -113,6 +116,7 @@ export class Heatmap {
 
     renderVis() {
         let vis = this;
+        // Height-encoded cells ('bars')
         vis.chart.selectAll('.bar')
             .data(vis.data.filter(d => vis.rowLabels.slice(0, 2).includes(d.rowLabel)), d => `${d.parliament} ${d.rowLabel}`)
             .join('rect')
@@ -125,6 +129,7 @@ export class Heatmap {
             .classed('heatmap', true)
             .classed('bar', true);
 
+        // Regular cells, including transparent 'windows' for the bars
         vis.chart.selectAll('.cell')
             .data(vis.data, d => `${d.parliament} ${d.rowLabel}`)
             .join('rect')
@@ -138,6 +143,27 @@ export class Heatmap {
             .classed('window', d => d.scaleHeight)
             .classed('selected', d => d.rowLabel === vis.selectedRowLabel && vis.selectedParliaments.has(d.parliament));
 
+        // right-hand-side text to indicate ranges for the colour scale
+        vis.chart.select('.legend-g')
+            .selectAll('g')
+            .data(vis.colourScales.values())
+            .join('g')
+            // magic number
+            .attr('transform', (d, i) => `translate(${vis.width - 100}, ${vis.y(vis.rowLabels[i])})`)
+            .attr('class', 'legend-text')
+            // .attr('x', (d, i) => vis.width - 100)
+            .append('text')
+            .attr('dy', vis.y.bandwidth() / 2 + 4)
+            .text(d => {
+                const domain = d.domain();
+                if (domain.length !== 2) {
+                    return '';
+                }
+                if (domain[0] < 1 && domain[1] < 1) {
+                    return `${Math.round(domain[0] * 100)}–${Math.round(domain[1] * 100)}%`
+                }
+                return `${Math.round(domain[0])}–${Math.round(domain[1])}`})
+
         vis.chart.selectAll('rect')
             .on("click", (event, d) => {
                 vis.selectedRowLabel = d.rowLabel;
@@ -149,7 +175,7 @@ export class Heatmap {
                     .style('display', 'block')
                     .style('left', (event.pageX + vis.config.tooltipPadding) + 'px')
                     .style('bottom', (window.innerHeight - event.pageY + vis.config.tooltipPadding) + 'px')
-                    .html(`<div class="tooltip-title">${d.parliament}</div>`);
+                    .html(`<div class="tooltip-title">${d.rowLabel}</div>`);
                 })
             .on('mouseleave', () => { d3.select('#map-tooltip').style('display', 'none'); });
 
@@ -199,28 +225,38 @@ export class Heatmap {
                 const allVotes = D.reduce((acc, candidate) => acc + candidate.votes, 0);
                 const winningPartyVotes = D.filter(d => d.party_major_group_cleaned === winningParty)
                                            .reduce((acc, candidate) => acc + candidate.votes, 0);
-                return winningPartyVotes / allVotes;
+                return {voteShare: winningPartyVotes / allVotes, winningParty: winningParty};
             }, d => d.parliament);
-        winningPartyPopularVote.forEach(d => vis.data.push(makeDataEntry(d, vis.rowLabels[rowIdx], true)));
-        vis.colourScales.set(vis.rowLabels[rowIdx++], vis.getSequentialScale(winningPartyPopularVote));
+        winningPartyPopularVote.forEach(d => vis.data.push({
+            val: d[1].voteShare, 
+            parliament: d[0],
+            rowLabel: vis.rowLabels[rowIdx], 
+            scaleHeight: true, 
+            colourOverride: d[1].winningParty
+        }));
+        vis.colourScales.set(vis.rowLabels[rowIdx++],
+            d3.scaleOrdinal(
+                vis.majorPartiesLookup.map(d => d.id),
+                vis.majorPartiesLookup.map(d => d.colour))
+                .unknown('#000'));
 
         const nonMale = d3.rollups(vis.filteredCandidates, 
                                    D => D.filter(d => d.gender !== 'M').length / D.length,
                                    d => d.parliament);
         nonMale.forEach(d => vis.data.push(makeDataEntry(d, vis.rowLabels[rowIdx])));
-        vis.colourScales.set(vis.rowLabels[rowIdx++], vis.getSequentialScale(nonMale));
+        vis.colourScales.set(vis.rowLabels[rowIdx++], vis.makeSequentialScale(nonMale));
 
         const indigenous = d3.rollups(vis.filteredCandidates, 
                                       D => D.filter(d => d.indigenousorigins === 1).length / D.length,
                                       d => d.parliament);
         indigenous.forEach(d => vis.data.push(makeDataEntry(d, vis.rowLabels[rowIdx])));
-        vis.colourScales.set(vis.rowLabels[rowIdx++], vis.getSequentialScale(indigenous));        
+        vis.colourScales.set(vis.rowLabels[rowIdx++], vis.makeSequentialScale(indigenous));        
 
         const age = d3.rollups(vis.filteredCandidates, 
                                D => d3.mean(D, d => d.age_at_election),
                                d => d.parliament);
         age.forEach(d => vis.data.push(makeDataEntry(d, vis.rowLabels[rowIdx])));
-        vis.colourScales.set(vis.rowLabels[rowIdx++], vis.getSequentialScale(age));        
+        vis.colourScales.set(vis.rowLabels[rowIdx++], vis.makeSequentialScale(age));        
 
         const count = d3.rollups(vis.filteredCandidates, D => {
                 // D contains all candidates for a given election.
@@ -231,10 +267,10 @@ export class Heatmap {
                 return d3.mean(fedCandidateCounts, e => e[1]);
             }, d => d.parliament);
         count.forEach(d => vis.data.push(makeDataEntry(d, vis.rowLabels[rowIdx])));
-        vis.colourScales.set(vis.rowLabels[rowIdx++], vis.getSequentialScale(count));
+        vis.colourScales.set(vis.rowLabels[rowIdx++], vis.makeSequentialScale(count));
     }
 
-    getSequentialScale(dataArray) {
+    makeSequentialScale(dataArray) {
         let vis = this;
         return d3.scaleSequential([
                 d3.min(dataArray, d => d[1]),
