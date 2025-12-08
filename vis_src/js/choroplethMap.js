@@ -188,17 +188,10 @@ export class ChoroplethMap {
             })
             .on('mouseleave', () => { d3.select('#map-tooltip').style('display', 'none'); });
 
-        // vis.legend.attr('transform', `translate(${vis.width - 100}, ${15})`)
-        // vis.legendTitle = vis.legendG.select
         vis.legendTitle.text(vis.getLegendTitle());
-        // vis.legendG
-        //     .selectAll('text')
-        //     .data(vis.colourScale.domain())
-        //     .join('text')
-        //     .text(d => d);
+        console.log(vis.colourScale.domain());
+        console.log(vis.colourScale.range());
             
-
-
         // TODO: get legend working. Probably need to create my own class for it...
         // renderLegend(vis.chart, vis.colourScale);
     }
@@ -233,7 +226,7 @@ export class ChoroplethMap {
             case "Indigenous": return "Percent indigenous";
             case "Age": return "Average candidate age";
             case "Count": return "Number of candidates";
-            case "Outcome": return "Winning party";
+            default: return "Winning party"; 
         }
     }
 
