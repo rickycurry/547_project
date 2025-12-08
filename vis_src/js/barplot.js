@@ -51,6 +51,11 @@ export class Barplot {
             .range([0, vis.width])
             .padding(0.15);
 
+        // scale for subgroups (all vs win)
+        vis.xSub = d3.scaleBand()
+            .domain(['all','win'])
+            .padding(0.05);
+
         // Initialize axes
         vis.xAxis = d3.axisBottom(vis.xScale)
             .tickSizeOuter(0);
@@ -77,7 +82,7 @@ export class Barplot {
 
         vis.dateParliamentMap = new Map();
         vis.candidatesGroupedByParliament.forEach((candidates, parliament) => {
-        vis.dateParliamentMap.set(candidates[0].edate.valueOf(), parliament);
+            vis.dateParliamentMap.set(candidates[0].edate.valueOf(), parliament);
         });
 
         vis.updateVis();
@@ -85,13 +90,13 @@ export class Barplot {
 
     updateVis() {
         let vis = this;
-        vis.data = vis.updateData();
+        vis.data = vis.updateData(); // returns array of [party, allVal, winVal]
         vis.xValue = d => d[0];
-        vis.yValue = d => d[1];
-        // TODO: sort this alphabetically (to improve top-bottom comparison) 
-        // or descending (to highlight inter-group relationships)
+        // compute maximum across both allVal and winVal
+        const maxVal = d3.max(vis.data, d => Math.max(d[1] || 0, d[2] || 0, 0));
         vis.xScale.domain(vis.data.map(d => d[0]));
-        vis.yScale.domain([0, d3.max(vis.data, vis.yValue)]);
+        vis.xSub.range([0, vis.xScale.bandwidth()]);
+        vis.yScale.domain([0, maxVal || 1]); // avoid zero-range
         vis.renderVis();
     }
     
@@ -99,27 +104,42 @@ export class Barplot {
     renderVis() {
         let vis = this;
 
-        // update axes instead of appending new ones
+        // update axes
         vis.xAxisG.call(vis.xAxis);
         vis.yAxisG.call(vis.yAxis);
 
-        // join with a key so bars update instead of stacking
-        vis.chart.selectAll(".bar")
-            .data(vis.data, d => d[0])
-            .join(
-                enter => enter.append("rect")
-                    .attr("class", "bar")
-                    .attr("x", d => vis.xScale(vis.xValue(d)))
-                    .attr("width", vis.xScale.bandwidth())
-                    .attr("y", d => vis.yScale(vis.yValue(d)))
-                    .attr("height", d => vis.height - vis.yScale(vis.yValue(d)))
-                    .attr("fill", "blue"),
-                update => update
-                    .attr("x", d => vis.xScale(vis.xValue(d)))
-                    .attr("width", vis.xScale.bandwidth())
-                    .attr("y", d => vis.yScale(vis.yValue(d)))
-                    .attr("height", d => vis.height - vis.yScale(vis.yValue(d)))
-            );
+        // one group per party
+        const groups = vis.chart.selectAll(".bar-group")
+            .data(vis.data, d => d[0]);
+
+        const groupsEnter = groups.join(
+            enter => enter.append("g")
+                .attr("class", "bar-group")
+                .attr("transform", d => `translate(${vis.xScale(d[0])},0)`),
+            update => update
+                .attr("transform", d => `translate(${vis.xScale(d[0])},0)`),
+            exit => exit.remove()
+        );
+
+        // two rects per group: all candidates and winners
+        groupsEnter.selectAll("rect")
+            .data(d => (['all','win'].map(k => ({k, v: k === 'all' ? d[1] : d[2]}))))
+            .join("rect")
+            .attr("class", d => `bar bar-${d.k}`)
+            .attr("x", d => vis.xSub(d.k))
+            .attr("width", vis.xSub.bandwidth())
+            .attr("y", d => vis.yScale(d.v != null ? d.v : 0))
+            .attr("height", d => vis.height - vis.yScale(d.v != null ? d.v : 0))
+            .attr("fill", d => d.k === 'all' ? "steelblue" : "orange");
+
+            // update bars 
+            groupsEnter.selectAll("rect")
+            .transition().duration(250)
+            .attr("x", d => vis.xSub(d.k))
+            .attr("width", vis.xSub.bandwidth())
+            .attr("y", d => vis.yScale(d.v != null ? d.v : 0))
+            .attr("height", d => vis.height - vis.yScale(d.v != null ? d.v : 0))
+            .attr("fill", d => d.k === 'all' ? "steelblue" : "orange");
     }
 
     filterCandidates() {
@@ -153,40 +173,72 @@ export class Barplot {
 
         // default to 'outcome' when quantAttr is not set
         const attr = vis.quantAttr || "outcome";
-        // wipe vis.data just in case....
         vis.data = [];
 
         // use the already-filtered candidate list for the currently selected RO/parliament
         const primaryElectionCandidates = vis.filteredCandidates || vis.candidates;
+        const winnersCandidates = (primaryElectionCandidates || []).filter(c => +c.elected === 1);
+
+        let mapall = new Map();
+        let mapwinners = new Map();
 
         switch (attr) {
             case "margin":
-                vis.data = vis.computeMarginCounts(primaryElectionCandidates);
+                 // same for candidates and winners
+                mapall = vis.computeMarginCounts(primaryElectionCandidates);
+                mapwinners = vis.computeMarginCounts(winnersCandidates);
                 break;
             case "non-male":
-                vis.data = vis.computeGenderCounts(primaryElectionCandidates);
+                mapall = vis.computeGenderCounts(primaryElectionCandidates);
+                mapwinners = vis.computeGenderCounts(winnersCandidates);
                 break;
-             case "indigenous":
-                vis.data = vis.computeIndigenousCounts(primaryElectionCandidates);
+            case "indigenous":
+                mapall = vis.computeIndigenousCounts(primaryElectionCandidates);
+                mapwinners = vis.computeIndigenousCounts(winnersCandidates);
                 break;
             case "age":
-                vis.data = vis.computeAgeCounts(primaryElectionCandidates);
+                mapall = vis.computeAgeCounts(primaryElectionCandidates);
+                mapwinners = vis.computeAgeCounts(winnersCandidates);
                 break;
             case "count":
-                //return the number of candidates per major party
-                vis.data = d3.rollup(
+                mapall = d3.rollup(
                     primaryElectionCandidates, 
+                    D => D.length, 
+                    d => vis.majorPartiesLookup.get(d.party_major_group_cleaned));
+                mapwinners = d3.rollup(
+                    winnersCandidates, 
                     D => D.length, 
                     d => vis.majorPartiesLookup.get(d.party_major_group_cleaned));
                 break;
             case "outcome":
-                vis.data = vis.NumberFEDWins(primaryElectionCandidates);
+                // same for candidates and winners
+                mapall = vis.NumberFEDWins(primaryElectionCandidates);
+                mapwinners = vis.NumberFEDWins(winnersCandidates);
                 break;
         }
-        // if a map (from d3.rollup) was produced, convert to array of [key, value] pairs
-        if (vis.data instanceof Map) {
-            return Array.from(vis.data);
+
+        // normalize maps to array
+        const keys = new Set([...Array.from(mapall?.keys?.()||[]), ...Array.from(mapwinners?.keys?.()||[])]);
+        // build array of [party, allVal, winVal]
+        vis.data = Array.from(keys).map(function (k) {
+        let allValue = 0;
+        let winnerValue = 0;
+        if (mapall && mapall.get(k) != null) {
+            allValue = mapall.get(k);
         }
+        if (mapwinners && mapwinners.get(k) != null) {
+            winnerValue = mapwinners.get(k);
+        }
+        return [
+            k,
+            allValue,
+            winnerValue
+        ];
+    });
+
+        // sort alphabetically
+        vis.data.sort((a,b) => String(a[0]).localeCompare(String(b[0])));
+
         return vis.data || [];
     }
 
