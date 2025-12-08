@@ -136,8 +136,8 @@ export class ChoroplethMap {
         vis.legendSvg = d3.select(`#${vis.config.parentElement}`)
             .append('svg')
             .classed('legend', true)
-            .attr('width', '25%')
-            .attr('height', '30%')
+            .attr('width', '17%')
+            .attr('height', '47%')
             .style('left', `${0.73 * vis.width}px`)
             .style('top', `${-1.05 * vis.height}px`);
 
@@ -188,12 +188,47 @@ export class ChoroplethMap {
             })
             .on('mouseleave', () => { d3.select('#map-tooltip').style('display', 'none'); });
 
+        vis.renderLegend();
+    }
+
+    renderLegend() {
+        let vis = this;
         vis.legendTitle.text(vis.getLegendTitle());
+        const isSequential = Object.hasOwn(vis.colourScale, 'clamp');
+        if (!isSequential) {
+            // filter by parties that actually appear in our election
+            const partiesInThisElection = new Set(vis.filteredCandidates.map(d => d.party_major_group_cleaned));
+            const filteredDomain = vis.colourScale.domain().filter(d => partiesInThisElection.has(d));
+            console.log(filteredDomain);
+            vis.legendG.selectAll('g')
+                .data(filteredDomain)
+                .join('g')
+                .attr('transform', (d, i) => `translate(3, ${43 + 12 * i})`)
+                .each(function(d) {
+                    let parentG = d3.select(this);
+                    let rect = parentG.select('rect');
+                    if (rect.empty()) {
+                        rect = parentG.append('rect');
+                    }
+                    rect.attr('x', 5)
+                        .attr('y', 1)
+                        .attr('width', 10)
+                        .attr('height', 10)
+                        .attr('fill', vis.colourScale(d));
+
+                    let text = parentG.select('text');
+                    if (text.empty()) {
+                        text = parentG.append('text');
+                    }
+                    text.attr('x', 20)
+                        .attr('y', 1)
+                        .attr('dy', '9px')
+                        .text(vis.majorPartiesLookup[d].party);
+                }).classed('legend-entry', true);
+        }
         console.log(vis.colourScale.domain());
         console.log(vis.colourScale.range());
-            
-        // TODO: get legend working. Probably need to create my own class for it...
-        // renderLegend(vis.chart, vis.colourScale);
+        console.log(Object.hasOwn(vis.colourScale, 'clamp'));
     }
 
     zoomed(event) {
@@ -222,11 +257,11 @@ export class ChoroplethMap {
     getLegendTitle() {
         let vis = this;
         switch (vis.quantAttr) {
-            case "Non-male": return "Percent non-male";
-            case "Indigenous": return "Percent indigenous";
-            case "Age": return "Average candidate age";
-            case "Count": return "Number of candidates";
-            default: return "Winning party"; 
+            case "Non-male": return "Percent \nnon-male";
+            case "Indigenous": return "Percent \nindigenous";
+            case "Age": return "Average \ncandidate age";
+            case "Count": return "Number of \ncandidates";
+            default: return "Winning \nparty"; 
         }
     }
 

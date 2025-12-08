@@ -96,7 +96,14 @@ path:hover {
 .legend-title {
     color: #000;
     text-anchor: middle;
-    font-size: 10pt;
+    font-size: 11pt;
+}
+.legend-g .legend-entry text {
+    font-size: 8pt;
+    y: 50px;
+}
+.legend-g .legend-entry rect {
+    stroke: #333
 }
 
 /* Heatmap */
