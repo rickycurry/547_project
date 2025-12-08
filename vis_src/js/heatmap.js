@@ -79,7 +79,7 @@ export class Heatmap {
             .call(vis.yAxis);
             // .style('vertical-align', 'middle');
 
-        vis.chart.append("g")
+        vis.legend = vis.chart.append("g")
             .attr("class", "legend-g");
 
         vis.updateVis();
@@ -144,8 +144,7 @@ export class Heatmap {
             .classed('selected', d => d.rowLabel === vis.selectedRowLabel && vis.selectedParliaments.has(d.parliament));
 
         // right-hand-side text to indicate ranges for the colour scale
-        vis.chart.select('.legend-g')
-            .selectAll('g')
+        vis.legend.selectAll('g')
             .data(vis.colourScales.values())
             .join('g')
             // magic number

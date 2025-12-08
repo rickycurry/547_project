@@ -1,5 +1,4 @@
 import "./external/d3.v7.js";
-import "./external/topojson-client.js";
 import { ChoroplethMap } from "./choroplethMap.js"
 import { TimelineSlider } from "./timelineSlider.js"
 import { Barplot } from "./barplot.js"

@@ -133,6 +133,30 @@ export class ChoroplethMap {
         // This will change in the future depending on which "mode" the map is in, perhaps
         vis.colourScheme = d3.interpolateBlues;
 
+        vis.legendSvg = d3.select(`#${vis.config.parentElement}`)
+            .append('svg')
+            .classed('legend', true)
+            .attr('width', '25%')
+            .attr('height', '30%')
+            .style('left', `${0.73 * vis.width}px`)
+            .style('top', `${-1.05 * vis.height}px`);
+
+        vis.legendG = vis.legendSvg.append('g')
+            .attr('width', '100%')
+            .classed('legend-g', true);
+
+        // semi-transparent background
+        vis.legendG.append('rect')
+            .attr('width', '100%')
+            .attr('height', '100%')
+            .attr('fill', '#fff')
+            .attr('fill-opacity', '85%');
+
+        vis.legendTitle = vis.legendG.append('text')
+            .attr('x', '50%')
+            .attr('y', '15px')
+            .classed('legend-title', true);
+
         vis.updateVis();
     }
 
@@ -164,6 +188,17 @@ export class ChoroplethMap {
             })
             .on('mouseleave', () => { d3.select('#map-tooltip').style('display', 'none'); });
 
+        // vis.legend.attr('transform', `translate(${vis.width - 100}, ${15})`)
+        // vis.legendTitle = vis.legendG.select
+        vis.legendTitle.text(vis.getLegendTitle());
+        // vis.legendG
+        //     .selectAll('text')
+        //     .data(vis.colourScale.domain())
+        //     .join('text')
+        //     .text(d => d);
+            
+
+
         // TODO: get legend working. Probably need to create my own class for it...
         // renderLegend(vis.chart, vis.colourScale);
     }
@@ -189,6 +224,17 @@ export class ChoroplethMap {
         let vis = this;
         const roYear = vis.parliamentROMap.get(vis.currentParliament).toString();
         vis.currentRoIdx = vis.ros.map(ro => ro.name.slice(-4)).indexOf(roYear);
+    }
+
+    getLegendTitle() {
+        let vis = this;
+        switch (vis.quantAttr) {
+            case "Non-male": return "Percent non-male";
+            case "Indigenous": return "Percent indigenous";
+            case "Age": return "Average candidate age";
+            case "Count": return "Number of candidates";
+            case "Outcome": return "Winning party";
+        }
     }
 
     initValueMap() {
