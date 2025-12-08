@@ -183,7 +183,7 @@ export class ChoroplethMap {
                     .style('display', 'block')
                     .style('left', (event.pageX + vis.config.tooltipPadding) + 'px')
                     .style('bottom', (window.innerHeight - event.pageY + vis.config.tooltipPadding) + 'px')
-                    .html(`<div class="tooltip-title">${d.properties.fedname} ${d.properties.id}</div>
+                    .html(`<div class="tooltip-title">${d.properties.fedname}</div>
                            <div class="tooltip-body">${vis.tooltipBodyFn(d)}`);
             })
             .on('mouseleave', () => { d3.select('#map-tooltip').style('display', 'none'); });
@@ -306,6 +306,7 @@ export class ChoroplethMap {
             case "Indigenous": return "Percent \nindigenous";
             case "Age": return "Average \ncandidate age";
             case "Count": return "Number of \ncandidates";
+            case "Winner\nvote share": return "Victory\nmargin"
             default: return "Winning \nparty"; 
         }
     }
@@ -315,24 +316,24 @@ export class ChoroplethMap {
 
         let attributeIsProportion = false;
         switch (vis.quantAttr) {
-            // case "margin":
-            //     vis.valueMap = d3.rollup(vis.filteredCandidates, v => {
-            //             if (v.length <= 1) {
-            //                 return null;
-            //             }
-            //             v.sort((a, b) => b.percent_votes - a.percent_votes);
-            //             return v[0].percent_votes - v[1].percent_votes;
-            //         }, 
-            //         d => d.fed_id);
-            //     vis.tooltipBodyFn = d => {
-            //         const fedIdInt = parseInt(d.properties.id);
-            //         const fedCandidates = vis.filteredCandidates.filter(c => c.fed_id === fedIdInt);
-            //         fedCandidates.sort((a, b) => b.percent_votes - a.percent_votes);
-            //         const margin = `Margin of victory: ${Math.round(vis.valueMap.get(fedIdInt))}%`;
-            //         const candidateStrings = fedCandidates.map(c => `${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)}) — ${Math.round(c.percent_votes)}%`);
-            //         return margin + '\n' + candidateStrings.join('\n');
-            //     };
-            //     break;
+            case "Winner\nvote share":
+                vis.valueMap = d3.rollup(vis.filteredCandidates, v => {
+                        if (v.length <= 1) {
+                            return null;
+                        }
+                        v.sort((a, b) => b.percent_votes - a.percent_votes);
+                        return v[0].percent_votes - v[1].percent_votes;
+                    }, 
+                    d => d.fed_id);
+                vis.tooltipBodyFn = d => {
+                    const fedIdInt = parseInt(d.properties.id);
+                    const fedCandidates = vis.filteredCandidates.filter(c => c.fed_id === fedIdInt);
+                    fedCandidates.sort((a, b) => b.percent_votes - a.percent_votes);
+                    const margin = `Margin of victory: ${Math.round(vis.valueMap.get(fedIdInt))}%`;
+                    const candidateStrings = fedCandidates.map(c => `${c.elected ? '<b>' : ''}${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)}) — ${Math.round(c.percent_votes)}%${c.elected ? '</b>' : ''}`);
+                    return margin + '\n' + candidateStrings.join('\n');
+                };
+                break;
 
             case "Non-male":
                 vis.valueMap = d3.rollup(vis.filteredCandidates, v => {
@@ -343,11 +344,9 @@ export class ChoroplethMap {
                 vis.tooltipBodyFn = d => {
                     const fedIdInt = parseInt(d.properties.id);
                     const fedCandidates = vis.filteredCandidates.filter(c => c.fed_id === fedIdInt);
-                    const candidateStrings = fedCandidates.map(c => {
-                        return c.gender === 'M' ? `${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)}) — ${c.gender}` 
-                                                : `<b>${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)}) — ${c.gender}</b>`
-                    });
-                    return candidateStrings.join('\n');
+                    const percentNonMale = `${Math.round(vis.valueMap.get(fedIdInt) * 100)}% of candidates are non-male:`
+                    const candidateStrings = fedCandidates.map(c => `${c.gender !== 'M' ? '<b>' : ''}${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)}) — ${c.gender}${c.gender !== 'M' ? '</b>' : ''}`);
+                    return percentNonMale + '\n' + candidateStrings.join('\n');
                 };
                 attributeIsProportion = true;
                 break;
@@ -361,10 +360,9 @@ export class ChoroplethMap {
                 vis.tooltipBodyFn = d => {
                     const fedIdInt = parseInt(d.properties.id);
                     const fedCandidates = vis.filteredCandidates.filter(c => c.fed_id === fedIdInt);
-                    const candidateStrings = fedCandidates.map(c => {
-                        return c.indigenousorigins ? `<b>${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)})</b>` : `${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)})`;
-                    });
-                    return candidateStrings.join('\n');
+                    const percentIndigenous = `${Math.round(vis.valueMap.get(fedIdInt) * 100)}% of candidates have indigenous origins:`
+                    const candidateStrings = fedCandidates.map(c => `${c.indigenousorigins ? '<b>' : ''}${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)})${c.indigenousorigins ? '</b>' : ''}`);
+                    return percentIndigenous + '\n' + candidateStrings.join('\n');
                 };
                 attributeIsProportion = true;
                 break;
@@ -375,8 +373,10 @@ export class ChoroplethMap {
                     // NOTE: we basically only have age data for winners, not all candidates!
                     const fedIdInt = parseInt(d.properties.id);
                     const fedCandidates = vis.filteredCandidates.filter(c => c.fed_id === fedIdInt);
-                    const candidateStrings = fedCandidates.map(c => `${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)}) — ${isNaN(c.age_at_election) ? "unknown" : c.age_at_election}`);
-                    return candidateStrings.join('\n');
+                    const averageAge = Math.round(vis.valueMap.get(fedIdInt))
+                    const averageAgeStr = `Average age of candidates: ${isNaN(averageAge) ? 'unknown' : averageAge}`;
+                    const candidateStrings = fedCandidates.map(c => `${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)}) — ${c.age_at_election === null ? "unknown" : c.age_at_election}`);
+                    return averageAgeStr + '\n' + candidateStrings.join('\n');
                 };
                 break;
 
@@ -385,13 +385,13 @@ export class ChoroplethMap {
                 vis.tooltipBodyFn = d => {
                     const fedIdInt = parseInt(d.properties.id);
                     const fedCandidates = vis.filteredCandidates.filter(c => c.fed_id === fedIdInt);
-                    const candidateCountStr = `${fedCandidates.length} candidates\n• `
+                    const candidateCountStr = `${fedCandidates.length} candidate(s)\n`
                     const candidateStrings = fedCandidates.map(c => `${c.elected ? '<b>' : ''}${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)})${c.elected ? '</b>' : ''}`);
-                    return candidateCountStr + candidateStrings.join('\n• ');
+                    return candidateCountStr + candidateStrings.join('\n');
                 };
                 break;
 
-            case "Outcome":
+            case "Winner and\nseat share":
             default:
                 vis.valueMap = d3.rollup(vis.filteredCandidates, v => {
                         const winners = v.filter(d => d.elected === 1);

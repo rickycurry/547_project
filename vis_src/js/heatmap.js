@@ -77,7 +77,6 @@ export class Heatmap {
         vis.yAxis = d3.axisLeft(vis.y);
         vis.chart.append("g")
             .call(vis.yAxis);
-            // .style('vertical-align', 'middle');
 
         vis.legend = vis.chart.append("g")
             .attr("class", "legend-g");
