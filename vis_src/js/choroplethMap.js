@@ -131,14 +131,14 @@ export class ChoroplethMap {
         vis.svg.call(vis.zoom);
 
         // This will change in the future depending on which "mode" the map is in, perhaps
-        vis.colourScheme = d3.interpolateBlues;
+        vis.colourScheme = d3.interpolateYlGn;
 
         vis.legendSvg = d3.select(`#${vis.config.parentElement}`)
             .append('svg')
             .classed('legend', true)
             .attr('width', '17%')
             .attr('height', '47%')
-            .style('left', `${0.73 * vis.width}px`)
+            .style('left', `${0.82 * vis.width}px`)
             .style('top', `${-1.05 * vis.height}px`);
 
         vis.legendG = vis.legendSvg.append('g')
@@ -149,12 +149,12 @@ export class ChoroplethMap {
         vis.legendG.append('rect')
             .attr('width', '100%')
             .attr('height', '100%')
-            .attr('fill', '#fff')
+            .attr('fill', '#eee')
             .attr('fill-opacity', '85%');
 
         vis.legendTitle = vis.legendG.append('text')
             .attr('x', '50%')
-            .attr('y', '15px')
+            .attr('y', '18px')
             .classed('legend-title', true);
 
         vis.updateVis();
@@ -199,36 +199,81 @@ export class ChoroplethMap {
             // filter by parties that actually appear in our election
             const partiesInThisElection = new Set(vis.filteredCandidates.map(d => d.party_major_group_cleaned));
             const filteredDomain = vis.colourScale.domain().filter(d => partiesInThisElection.has(d));
-            console.log(filteredDomain);
-            vis.legendG.selectAll('g')
-                .data(filteredDomain)
-                .join('g')
-                .attr('transform', (d, i) => `translate(3, ${43 + 12 * i})`)
-                .each(function(d) {
-                    let parentG = d3.select(this);
-                    let rect = parentG.select('rect');
-                    if (rect.empty()) {
-                        rect = parentG.append('rect');
-                    }
-                    rect.attr('x', 5)
-                        .attr('y', 1)
-                        .attr('width', 10)
-                        .attr('height', 10)
-                        .attr('fill', vis.colourScale(d));
-
-                    let text = parentG.select('text');
-                    if (text.empty()) {
-                        text = parentG.append('text');
-                    }
-                    text.attr('x', 20)
-                        .attr('y', 1)
-                        .attr('dy', '9px')
-                        .text(vis.majorPartiesLookup[d].party);
-                }).classed('legend-entry', true);
+            vis.ordinalLegend(filteredDomain, d => vis.majorPartiesLookup[d].party);
+            return;
         }
-        console.log(vis.colourScale.domain());
-        console.log(vis.colourScale.range());
-        console.log(Object.hasOwn(vis.colourScale, 'clamp'));
+        // special case if min === max 
+        const domain = vis.colourScale.domain();
+        if (domain[0] === domain[1]) {
+            // Treat this as in the ordinal case
+            vis.ordinalLegend([domain[0]], d => `${Math.round(d * 100)}%`);
+            return;
+        }
+        // Normal sequential range case.
+        // Draw a bar that will be the same total height as our max ordinal legend size.
+        const steps = 7 * 12 - 1; // max ordinal squares times size of squares.
+        const domainStepSize = (domain[1] - domain[0]) / steps;
+        let startingDomain = domain[1]; // work down from the top
+        const domainSteps = [];
+        for (let i = 0; i <= steps; i++) {
+            domainSteps.push(startingDomain);
+            startingDomain -= domainStepSize;
+        }
+        vis.legendG.selectAll('g')
+            .data(domainSteps)
+            .join('g')
+            .attr('transform', (d, i) => `translate (3, ${43 + i})`)
+            .each(function(d) {
+                let parentG = d3.select(this);
+                let rect = parentG.select('rect');
+                if (rect.empty()) {
+                    rect = parentG.append('rect');
+                }
+                rect.attr('x', 5)
+                    .attr('y', 0)
+                    .attr('width', 20)
+                    .attr('height', 1)
+                    .attr('fill', vis.colourScale(d));
+
+                let text = parentG.select('text');
+                if (!text.empty()) {
+                    text.text('');
+                }
+            }).classed('legend-entry', false);
+
+        vis.legendYAxisScale.range([steps, 0]);
+        vis.legendG.append("g")
+            .attr('transform', 'translate(30, 43.5)')
+            .call(vis.legendYAxis);
+    }
+
+    ordinalLegend(domainData, textMappingFn) {
+        let vis = this;
+        vis.legendG.selectAll('g')
+            .data(domainData)
+            .join('g')
+            .attr('transform', (d, i) => `translate(3, ${43 + 12 * i})`)
+            .each(function(d) {
+                let parentG = d3.select(this);
+                let rect = parentG.select('rect');
+                if (rect.empty()) {
+                    rect = parentG.append('rect');
+                }
+                rect.attr('x', 5)
+                    .attr('y', 1)
+                    .attr('width', 10)
+                    .attr('height', 10)
+                    .attr('fill', vis.colourScale(d));
+
+                let text = parentG.select('text');
+                if (text.empty()) {
+                    text = parentG.append('text');
+                }
+                text.attr('x', 20)
+                    .attr('y', 1)
+                    .attr('dy', '9px')
+                    .text(textMappingFn(d));
+            }).classed('legend-entry', true);
     }
 
     zoomed(event) {
@@ -268,25 +313,26 @@ export class ChoroplethMap {
     initValueMap() {
         let vis = this;
 
+        let attributeIsProportion = false;
         switch (vis.quantAttr) {
-            case "margin":
-                vis.valueMap = d3.rollup(vis.filteredCandidates, v => {
-                        if (v.length <= 1) {
-                            return null;
-                        }
-                        v.sort((a, b) => b.percent_votes - a.percent_votes);
-                        return v[0].percent_votes - v[1].percent_votes;
-                    }, 
-                    d => d.fed_id);
-                vis.tooltipBodyFn = d => {
-                    const fedIdInt = parseInt(d.properties.id);
-                    const fedCandidates = vis.filteredCandidates.filter(c => c.fed_id === fedIdInt);
-                    fedCandidates.sort((a, b) => b.percent_votes - a.percent_votes);
-                    const margin = `Margin of victory: ${Math.round(vis.valueMap.get(fedIdInt))}%`;
-                    const candidateStrings = fedCandidates.map(c => `${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)}) — ${Math.round(c.percent_votes)}%`);
-                    return margin + '\n' + candidateStrings.join('\n');
-                };
-                break;
+            // case "margin":
+            //     vis.valueMap = d3.rollup(vis.filteredCandidates, v => {
+            //             if (v.length <= 1) {
+            //                 return null;
+            //             }
+            //             v.sort((a, b) => b.percent_votes - a.percent_votes);
+            //             return v[0].percent_votes - v[1].percent_votes;
+            //         }, 
+            //         d => d.fed_id);
+            //     vis.tooltipBodyFn = d => {
+            //         const fedIdInt = parseInt(d.properties.id);
+            //         const fedCandidates = vis.filteredCandidates.filter(c => c.fed_id === fedIdInt);
+            //         fedCandidates.sort((a, b) => b.percent_votes - a.percent_votes);
+            //         const margin = `Margin of victory: ${Math.round(vis.valueMap.get(fedIdInt))}%`;
+            //         const candidateStrings = fedCandidates.map(c => `${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)}) — ${Math.round(c.percent_votes)}%`);
+            //         return margin + '\n' + candidateStrings.join('\n');
+            //     };
+            //     break;
 
             case "Non-male":
                 vis.valueMap = d3.rollup(vis.filteredCandidates, v => {
@@ -303,6 +349,7 @@ export class ChoroplethMap {
                     });
                     return candidateStrings.join('\n');
                 };
+                attributeIsProportion = true;
                 break;
                 
             case "Indigenous":
@@ -319,6 +366,7 @@ export class ChoroplethMap {
                     });
                     return candidateStrings.join('\n');
                 };
+                attributeIsProportion = true;
                 break;
 
             case "Age":
@@ -367,7 +415,13 @@ export class ChoroplethMap {
         }
         let min = d3.least(vis.valueMap.values());
         let max = d3.greatest(vis.valueMap.values());
-        vis.colourScale = d3.scaleSequential([min, max], vis.colourScheme);
+        vis.colourScale = d3.scaleSequential([min, max], vis.colourScheme).nice(5);
+        // [0, 1] is a placeholder that will be overwritten later in the render loop
+        vis.legendYAxisScale = d3.scaleLinear([min, max], [0, 1]).nice(5);
+        vis.legendYAxis = d3.axisRight(vis.legendYAxisScale).ticks(5);
+        if (attributeIsProportion) {
+            vis.legendYAxis.tickFormat(d3.format(".0%"));
+        }
     }
 
     getColour(datum) {

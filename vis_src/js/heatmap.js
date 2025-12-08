@@ -58,7 +58,7 @@ export class Heatmap {
             .attr('transform', `translate(${vis.config.margin.left},${vis.config.margin.top})`);
 
         // This will change in the future depending on which "mode" the map is in, perhaps?
-        vis.colourScheme = d3.interpolateBlues;
+        vis.colourScheme = d3.interpolateYlGn;
 
         const parliaments = Array.from(new d3.InternSet(vis.candidates, d => d.parliament), d => d.parliament);
         vis.x = d3.scaleBand()
