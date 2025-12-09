@@ -71,12 +71,25 @@ async function main() {
 
 main();
 
-function changeParliament(newParliament) {
+// function changeParliament(newParliament) {
+//     const historicSelectedGeography = transformSelectedGeoToHistoricRO(parliamentROMapping.get(newParliament));
+//     const selectedParliaments = new Set([timelineSliderUpper.currentParliament, timelineSliderLower.currentParliament]);
+//     heatmap.changeParliaments(selectedParliaments);
+//     // barPlotLower.changeParliament
+//     this.changeParliament(newParliament, historicSelectedGeography);
+// }
+
+function changeParliament(newParliament, isUpper) {
     const historicSelectedGeography = transformSelectedGeoToHistoricRO(parliamentROMapping.get(newParliament));
     const selectedParliaments = new Set([timelineSliderUpper.currentParliament, timelineSliderLower.currentParliament]);
     heatmap.changeParliaments(selectedParliaments);
-    // barPlotLower.changeParliament
-    this.changeParliament(newParliament, historicSelectedGeography);
+    if (isUpper) {
+        barPlotUpper.changeParliament(newParliament, historicSelectedGeography);
+        choroplethUpper.changeParliament(newParliament, historicSelectedGeography);
+    } else {
+        barPlotLower.changeParliament(newParliament, historicSelectedGeography);
+        choroplethLower.changeParliament(newParliament, historicSelectedGeography);
+    }
 }
 
 function changeAOI(aoiString) {

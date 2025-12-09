@@ -41,7 +41,7 @@ export class Barplot {
     changeParliament(newParliament, newSelectedGeography) {
         let vis = this;
         vis.currentParliament = newParliament;
-        vis.selectedFeds = newSelectedGeography;
+        vis.selectedFeds = new Set(Array.from(newSelectedGeography).map(d => Number(d)));
         vis.updateVis();
     }
 
@@ -107,18 +107,8 @@ export class Barplot {
         let vis = this;
         vis.filterCandidates();
         vis.initValueMap();
-        // vis.renderVis();
-
-        // vis.data = vis.updateData(); // returns array of [party, allVal, winVal]
-        // vis.xValue = d => d[0];
-        // // compute maximum across both allVal and winVal
-        // const maxVal = d3.max(vis.data, d => Math.max(d[1] || 0, d[2] || 0, 0));
-        // vis.xScale.domain(vis.data.map(d => d[0]));
-        // vis.xSub.range([0, vis.xScale.bandwidth()]);
-        // vis.yScale.domain([0, maxVal || 1]); // avoid zero-range
-        // vis.renderVis();
+        vis.renderVis();
     }
-    
 
     renderVis() {
         let vis = this;
@@ -223,101 +213,4 @@ export class Barplot {
         let mapall = new Map();
         let mapwinners = new Map();
     }
-
-        // switch (attr) {
-    //         case "margin":
-    //              // same for candidates and winners
-    //             mapall = vis.computeMarginCounts(primaryElectionCandidates);
-    //             mapwinners = vis.computeMarginCounts(winnersCandidates);
-    //             break;
-    //         case "non-male":
-    //             mapall = vis.computeGenderCounts(primaryElectionCandidates);
-    //             mapwinners = vis.computeGenderCounts(winnersCandidates);
-    //             break;
-    //         case "indigenous":
-    //             mapall = vis.computeIndigenousCounts(primaryElectionCandidates);
-    //             mapwinners = vis.computeIndigenousCounts(winnersCandidates);
-    //             break;
-    //         case "age":
-    //             mapall = vis.computeAgeCounts(primaryElectionCandidates);
-    //             mapwinners = vis.computeAgeCounts(winnersCandidates);
-    //             break;
-    //         case "count":
-    //             mapall = d3.rollup(
-    //                 primaryElectionCandidates, 
-    //                 D => D.length, 
-    //                 d => vis.majorPartiesLookup.get(d.party_major_group_cleaned));
-    //             mapwinners = d3.rollup(
-    //                 winnersCandidates, 
-    //                 D => D.length, 
-    //                 d => vis.majorPartiesLookup.get(d.party_major_group_cleaned));
-    //             break;
-    //         case "outcome":
-    //             // same for candidates and winners
-    //             mapall = vis.NumberFEDWins(primaryElectionCandidates);
-    //             mapwinners = vis.NumberFEDWins(winnersCandidates);
-    //             break;
-    //     }
-
-    //     // normalize maps to array
-    //     const keys = new Set([...Array.from(mapall?.keys?.()||[]), ...Array.from(mapwinners?.keys?.()||[])]);
-    //     // build array of [party, allVal, winVal]
-    //     vis.data = Array.from(keys).map(function (k) {
-    //     let allValue = 0;
-    //     let winnerValue = 0;
-    //     if (mapall && mapall.get(k) != null) {
-    //         allValue = mapall.get(k);
-    //     }
-    //     if (mapwinners && mapwinners.get(k) != null) {
-    //         winnerValue = mapwinners.get(k);
-    //     }
-    //     return [
-    //         k,
-    //         allValue,
-    //         winnerValue
-    //     ];
-    // });
-
-    //     // sort alphabetically
-    //     vis.data.sort((a,b) => String(a[0]).localeCompare(String(b[0])));
-
-    //     return vis.data || [];
-    // }
-
-
-    // // get proportion of non-male candidates per party.
-    // computeGenderCounts(primaryElectionCandidates) {
-    //     let vis = this;
-    //     // assume primaryElectionCandidates is already restricted to the selected parliament/RO
-    //     const map = d3.rollup(
-    //         primaryElectionCandidates, 
-    //         D => {
-    //             const totalCandidateCount = D.length;
-    //             if (totalCandidateCount) {
-    //                 // count all candidates who are not male
-    //                 const nonMaleCount = D.filter(c => c.gender !== 'M').length;
-    //                 return nonMaleCount / totalCandidateCount;
-    //             } else {
-    //                 return 0;
-    //             }
-    //         }, 
-    //         d => vis.majorPartiesLookup.get(d.party_major_group_cleaned)
-    //     );
-    //     return map;
-    // }
-
-    // // get proportion of indigenous candidates per party.
-    // computeIndigenousCounts(primaryElectionCandidates) {
-    //     let vis = this;
-    //     // assume primaryElectionCandidates is already restricted to the selected parliament/RO
-    //     return d3.rollup(
-    //         primaryElectionCandidates, 
-    //         D => {
-    //             const totalCandidateCount = D.length;
-    //             if (!totalCandidateCount) return 0;
-    //             return D.filter(c => +c.indigenousorigins === 1).length / totalCandidateCount;
-    //         }, 
-    //         d => vis.majorPartiesLookup.get(d.party_major_group_cleaned)
-    //     );
-    // }
 }

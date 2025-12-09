@@ -77,7 +77,7 @@ export class TimelineSlider {
             .tickValues(parliaments)
             .on("onchange", (val) => {
                 vis.currentParliament = val;
-                vis.changeDateCallback(val);
+                vis.changeDateCallback(val, vis.config.isUpper);
             });
 
         vis.svg.call(vis.slider);
