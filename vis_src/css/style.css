@@ -129,4 +129,7 @@ path.selected, path:hover {
     font-size: 8pt;
 }
 
-/* rect. */
+/* Barplot */
+.barplot-bar rect {
+    stroke: #333;
+}
