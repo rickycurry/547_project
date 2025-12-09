@@ -183,6 +183,7 @@ export class ChoroplethMap {
                     .style('display', 'block')
                     .style('left', (event.pageX + vis.config.tooltipPadding) + 'px')
                     .style('bottom', (window.innerHeight - event.pageY + vis.config.tooltipPadding) + 'px')
+                    .style('top', '')
                     .html(`<div class="tooltip-title">${d.properties.fedname}</div>
                            <div class="tooltip-body">${vis.tooltipBodyFn(d)}`);
             })
@@ -306,7 +307,7 @@ export class ChoroplethMap {
             case "Indigenous": return "Percent \nindigenous";
             case "Age": return "Average \ncandidate age";
             case "Count": return "Number of \ncandidates";
-            case "Winner\nvote share": return "Victory\nmargin"
+            case "Vote share": return "Victory\nmargin"
             default: return "Winning \nparty"; 
         }
     }
@@ -316,10 +317,13 @@ export class ChoroplethMap {
 
         let attributeIsProportion = false;
         switch (vis.quantAttr) {
-            case "Winner\nvote share":
+            case "Vote share":
                 vis.valueMap = d3.rollup(vis.filteredCandidates, v => {
-                        if (v.length <= 1) {
+                        if (v.length < 1) {
                             return null;
+                        }
+                        if (v.length === 1) {
+                            return 100;
                         }
                         v.sort((a, b) => b.percent_votes - a.percent_votes);
                         return v[0].percent_votes - v[1].percent_votes;

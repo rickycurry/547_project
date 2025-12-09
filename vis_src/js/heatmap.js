@@ -27,13 +27,13 @@ export class Heatmap {
         this.majorPartiesLookup = _majorPartiesLookup;
         this.rawPartiesLookup = new Map();
         this.selectedGeoByRo = null;
-        this.rowLabels = ['Winner and\nseat share', 'Winner\nvote share', 'Non-male', 'Indigenous', 'Age', 'Count'];
+        this.rowLabels = ['Winner and\nseat share', 'Vote share', 'Non-male', 'Indigenous', 'Age', 'Count'];
         this.selectedRowLabel = this.rowLabels[0];
         this.selectedParliaments = new Set([1, 44]);
         _rawPartiesLookup.forEach(d => this.rawPartiesLookup.set(d.id, d.party));
 
         this.changeAOICallback = _changeAOICallback;
-        this.tooltipBodyFn = () => "";
+        this.tooltipBodyFns = new Map();
         
         this.initVis();
     }
@@ -181,13 +181,11 @@ export class Heatmap {
                 d3.select('#map-tooltip')
                     .style('display', 'block')
                     .style('left', (event.pageX + vis.config.tooltipPadding) + 'px')
-                    .style('bottom', (window.innerHeight - event.pageY + vis.config.tooltipPadding) + 'px')
-                    .html(`<div class="tooltip-title">${d.rowLabel}</div>`);
+                    .style('top', (event.pageY + vis.config.tooltipPadding) + 'px')
+                    .style('bottom', '')
+                    .html(`<div class="tooltip-body">${vis.tooltipBodyFns.get(d.rowLabel)(d)}</div>`);
                 })
             .on('mouseleave', () => { d3.select('#map-tooltip').style('display', 'none'); });
-
-        // TODO: get legend working. Probably need to create my own class for it...
-        // renderLegend(vis.chart, vis.colourScale);
     }
 
     barHeight(d) {
@@ -203,67 +201,79 @@ export class Heatmap {
 
         vis.data = [];
         vis.colourScales = new Map();
-        // Will combine outcome and margin eventually. For now, calculate vote share for the winning party??
         let rowIdx = 0;
 
         const winnerAndSeatShare = d3.rollups(vis.filteredCandidates, D => {
-                const winningParty = D[0].gov_major_group;
-                const allSeats = D.reduce((acc, candidate) => acc + candidate.elected, 0);
-                const winningPartySeats = D.filter(d => d.party_major_group_cleaned === winningParty)
-                                           .reduce((acc, candidate) => acc + candidate.elected, 0);
-                return {seatShare: winningPartySeats / allSeats, winningParty: winningParty};
+                const seatsByParty = d3.rollups(D.filter(d => d.elected), E => E.length, d => d.party_major_group_cleaned);
+                const winningParty = d3.greatest(seatsByParty, d => d[1]);
+                const allSeats = d3.sum(seatsByParty, d => d[1]);
+                return {seatShare: winningParty[1] / allSeats, winningParty: winningParty[0], seatsByParty: seatsByParty, totalSeats: allSeats};
             }, d => d.parliament);
         // console.log(winnerAndSeatShare);
-        winnerAndSeatShare.forEach(d => vis.data.push({
+        winnerAndSeatShare.forEach(d => vis.data.push({ 
             val: d[1].seatShare, 
             parliament: d[0],
             rowLabel: vis.rowLabels[rowIdx], 
             scaleHeight: true, 
-            colourOverride: d[1].winningParty
+            colourOverride: d[1].winningParty,
+            seatsByParty: d[1].seatsByParty.sort((a, b) => b[1] - a[1]),
+            totalSeats: d[1].totalSeats
         }));
-        vis.colourScales.set(vis.rowLabels[rowIdx++],
+        vis.colourScales.set(vis.rowLabels[rowIdx],
             d3.scaleOrdinal(
                 vis.majorPartiesLookup.map(d => d.id),
                 vis.majorPartiesLookup.map(d => d.colour))
                 .unknown('#000'));
+        vis.tooltipBodyFns.set(vis.rowLabels[rowIdx++], function(d) {
+            const partyStrings = d.seatsByParty.map(e => `${vis.majorPartiesLookup[e[0]].party} - ${e[1]} (${Math.round(e[1] / d.totalSeats * 100)}%)`)
+            return partyStrings.join('\n');
+        });
 
         const winningPartyPopularVote = d3.rollups(vis.filteredCandidates, D => {
-                const winningParty = D[0].gov_major_group;
-                const allVotes = D.reduce((acc, candidate) => acc + candidate.votes, 0);
-                const winningPartyVotes = D.filter(d => d.party_major_group_cleaned === winningParty)
-                                           .reduce((acc, candidate) => acc + candidate.votes, 0);
-                return {voteShare: winningPartyVotes / allVotes, winningParty: winningParty};
+                const votesByParty = d3.rollups(D, E => d3.sum(E, e => e.votes), d => d.party_major_group_cleaned).sort((a, b) => b[1] - a[1]);
+                const winningParty = d3.greatest(votesByParty, d => d[1]);
+                const allVotes = d3.sum(votesByParty, d => d[1]);
+                return {voteShare: winningParty[1] / allVotes, winningParty: winningParty[0], votesByParty: votesByParty, totalVotes: allVotes};
             }, d => d.parliament);
         winningPartyPopularVote.forEach(d => vis.data.push({
             val: d[1].voteShare, 
             parliament: d[0],
             rowLabel: vis.rowLabels[rowIdx], 
             scaleHeight: true, 
-            colourOverride: d[1].winningParty
+            colourOverride: d[1].winningParty,
+            votesByParty: d[1].votesByParty.sort((a, b) => b[1] - a[1]),
+            totalVotes: d[1].totalVotes
         }));
-        vis.colourScales.set(vis.rowLabels[rowIdx++],
+        vis.colourScales.set(vis.rowLabels[rowIdx],
             d3.scaleOrdinal(
                 vis.majorPartiesLookup.map(d => d.id),
                 vis.majorPartiesLookup.map(d => d.colour))
                 .unknown('#000'));
+        vis.tooltipBodyFns.set(vis.rowLabels[rowIdx++], function(d) {
+            const partyStrings = d.votesByParty.map(e => `${vis.majorPartiesLookup[e[0]].party} - ${e[1]} (${Math.round(e[1] / d.totalVotes * 100)}%)`)
+            return partyStrings.join('\n');
+        });
 
         const nonMale = d3.rollups(vis.filteredCandidates, 
                                    D => D.filter(d => d.gender !== 'M').length / D.length,
                                    d => d.parliament);
         nonMale.forEach(d => vis.data.push(makeDataEntry(d, vis.rowLabels[rowIdx])));
-        vis.colourScales.set(vis.rowLabels[rowIdx++], vis.makeSequentialScale(nonMale));
+        vis.colourScales.set(vis.rowLabels[rowIdx], vis.makeSequentialScale(nonMale));
+        vis.tooltipBodyFns.set(vis.rowLabels[rowIdx++], d => `${(100 * d.val).toFixed(1)}%`);
 
         const indigenous = d3.rollups(vis.filteredCandidates, 
                                       D => D.filter(d => d.indigenousorigins === 1).length / D.length,
                                       d => d.parliament);
         indigenous.forEach(d => vis.data.push(makeDataEntry(d, vis.rowLabels[rowIdx])));
-        vis.colourScales.set(vis.rowLabels[rowIdx++], vis.makeSequentialScale(indigenous));        
+        vis.colourScales.set(vis.rowLabels[rowIdx], vis.makeSequentialScale(indigenous));    
+        vis.tooltipBodyFns.set(vis.rowLabels[rowIdx++], d => `${(100 * d.val).toFixed(1)}%`);
 
         const age = d3.rollups(vis.filteredCandidates, 
                                D => d3.mean(D, d => d.age_at_election),
                                d => d.parliament);
         age.forEach(d => vis.data.push(makeDataEntry(d, vis.rowLabels[rowIdx])));
-        vis.colourScales.set(vis.rowLabels[rowIdx++], vis.makeSequentialScale(age));        
+        vis.colourScales.set(vis.rowLabels[rowIdx], vis.makeSequentialScale(age));    
+        vis.tooltipBodyFns.set(vis.rowLabels[rowIdx++], d => d.val.toFixed(1));
 
         const count = d3.rollups(vis.filteredCandidates, D => {
                 // D contains all candidates for a given election.
@@ -274,7 +284,8 @@ export class Heatmap {
                 return d3.mean(fedCandidateCounts, e => e[1]);
             }, d => d.parliament);
         count.forEach(d => vis.data.push(makeDataEntry(d, vis.rowLabels[rowIdx])));
-        vis.colourScales.set(vis.rowLabels[rowIdx++], vis.makeSequentialScale(count));
+        vis.colourScales.set(vis.rowLabels[rowIdx], vis.makeSequentialScale(count));
+        vis.tooltipBodyFns.set(vis.rowLabels[rowIdx++], d => d.val.toFixed(1));
     }
 
     makeSequentialScale(dataArray) {
