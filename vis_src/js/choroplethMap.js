@@ -326,6 +326,7 @@ export class ChoroplethMap {
                             return 100;
                         }
                         v.sort((a, b) => b.percent_votes - a.percent_votes);
+                        // return difference between top two candidates
                         return v[0].percent_votes - v[1].percent_votes;
                     }, 
                     d => d.fed_id);

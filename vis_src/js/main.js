@@ -6,7 +6,7 @@ import { Heatmap } from "./heatmap.js";
 import { GeoSelector } from "./geoSelector.js";
 
 // Static data...
-let ros, candidates, partiesMajor, partiesRaw, fedHierarchy, historicOverlaps;
+let ros, candidates, partiesMajor, partiesRaw, fedHierarchy, historicOverlaps, provinces, occupations;
 let parliamentROMapping;
 // Vis instances...
 let choroplethUpper, choroplethLower;
@@ -49,6 +49,8 @@ async function loadData() {
     // console.log(historicOverlaps);
     partiesMajor = await d3.csv('../data/candidates/lookup_tables/parties_major.csv', d3.autoType);
     partiesRaw = await d3.csv('../data/candidates/lookup_tables/parties_raw.csv', d3.autoType);
+    occupations = await d3.csv('../data/candidates/lookup_tables/occupation_category.csv', d3.autoType);
+    provinces = await d3.csv('../data/candidates/lookup_tables/provinces.csv', d3.autoType);
 }
 
 async function loadROs(ro_years) {
@@ -61,8 +63,8 @@ async function main() {
     choroplethLower = new ChoroplethMap({parentElement: 'choroplethdiv-lower'}, ros, candidates, partiesMajor, partiesRaw, mapZoomed, parliamentROMapping);
     timelineSliderUpper = new TimelineSlider({parentElement: 'sliderdiv-upper', isUpper: true, margin: {top: 40, right: 70, bottom: 5, left: 78}, initializeMin: true}, candidates, changeParliament.bind(choroplethUpper));
     timelineSliderLower = new TimelineSlider({parentElement: 'sliderdiv-lower', isUpper: false, margin: {top: 5, right: 70, bottom: 30, left: 78}}, candidates, changeParliament.bind(choroplethLower));
-    barPlotUpper = new Barplot({parentElement: 'barplotdiv-upper'}, candidates, partiesMajor);
-    barPlotLower = new Barplot({parentElement: 'barplotdiv-lower'}, candidates, partiesMajor);
+    barPlotUpper = new Barplot({parentElement: 'barplotdiv-upper', currentParliament: 1}, candidates, partiesMajor, occupations, provinces);
+    barPlotLower = new Barplot({parentElement: 'barplotdiv-lower', currentParliament: 44}, candidates, partiesMajor, occupations, provinces);
     heatmap = new Heatmap({parentElement: 'heatmapdiv'}, candidates, partiesMajor, partiesRaw, changeAOI);
     selector = new GeoSelector({parentElement: 'selectordiv'}, fedHierarchy, geoSelectionChanged);
 }
@@ -73,6 +75,7 @@ function changeParliament(newParliament) {
     const historicSelectedGeography = transformSelectedGeoToHistoricRO(parliamentROMapping.get(newParliament));
     const selectedParliaments = new Set([timelineSliderUpper.currentParliament, timelineSliderLower.currentParliament]);
     heatmap.changeParliaments(selectedParliaments);
+    // barPlotLower.changeParliament
     this.changeParliament(newParliament, historicSelectedGeography);
 }
 
@@ -92,16 +95,25 @@ function mapZoomed(transform) {
 function geoSelectionChanged(geography, wasAdded) {
     selectedGeography = wasAdded ? selectedGeography.union(geography) : selectedGeography.difference(geography);
     // Update maps to show highlighting.
-    choroplethUpper.changeSelectedFEDs(transformSelectedGeoToHistoricRO(parliamentROMapping.get(choroplethUpper.currentParliament)));
-    choroplethLower.changeSelectedFEDs(transformSelectedGeoToHistoricRO(parliamentROMapping.get(choroplethLower.currentParliament)));
+    const upperTransformedGeo = transformSelectedGeoToHistoricRO(parliamentROMapping.get(choroplethUpper.currentParliament))
+    const lowerTransformedGeo = transformSelectedGeoToHistoricRO(parliamentROMapping.get(choroplethLower.currentParliament))
+    choroplethUpper.changeSelectedFEDs(upperTransformedGeo);
+    choroplethLower.changeSelectedFEDs(lowerTransformedGeo);
+    barPlotUpper.changeSelectedFEDs(upperTransformedGeo);
+    barPlotLower.changeSelectedFEDs(lowerTransformedGeo);
     // Also send all the ROs' transformed selected geography to the heatmap.
-    const allTransformedSelectedGeo = new Map();
-    ros.forEach(ro => {
-        const roNumber = Number(ro.name.slice(-4));
-        const transformedFedsAsStrings = transformSelectedGeoToHistoricRO(roNumber);
-        allTransformedSelectedGeo.set(roNumber, new Set(Array.from(transformedFedsAsStrings).map(d => Number(d))));
-    });
-    heatmap.changeSelectedGeography(selectedGeography.size > 0 ? allTransformedSelectedGeo : null);
+    if (selectedGeography.size === 0) {
+        heatmap.changeSelectedGeography(null);
+    } else {
+        const allTransformedSelectedGeo = new Map();
+        ros.forEach(ro => {
+            const roNumber = Number(ro.name.slice(-4));
+            const transformedFedsAsStrings = transformSelectedGeoToHistoricRO(roNumber);
+            allTransformedSelectedGeo.set(roNumber, new Set(Array.from(transformedFedsAsStrings).map(d => Number(d))));
+        });
+        heatmap.changeSelectedGeography(allTransformedSelectedGeo);
+    }
+    
 }
 
 function transformSelectedGeoToHistoricRO(ro) {
