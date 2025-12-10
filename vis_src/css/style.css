@@ -129,3 +129,7 @@ path.selected, path:hover {
 .barplot-bar rect {
     stroke: #333;
 }
+.active {
+    stroke: #000;
+    stroke-width: 1.5pt;
+}

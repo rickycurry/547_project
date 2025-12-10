@@ -9,8 +9,9 @@ export class Barplot {
     * @param _occupationsLookup {Array}
     * @param _provincesLookup {Array}
     * @param _changeAggregationAttrCallback {Function}
+    * @param _changeSelectedGroupCallback {Function}
     */
-    constructor(_config, _candidateData, _majorPartiesLookup, _occupationsLookup, _provincesLookup, _changeAggregationAttrCallback) {
+    constructor(_config, _candidateData, _majorPartiesLookup, _occupationsLookup, _provincesLookup, _changeAggregationAttrCallback, _changeSelectedGroupCallback) {
         // Configuration object with defaults
         this.config = {
             parentElement: _config.parentElement,
@@ -27,10 +28,12 @@ export class Barplot {
         this.provincesLookup = _provincesLookup;
         this.currentParliament = this.config.currentParliament;
         this.selectedFeds = null;
+        this.selectedGroup = 'all';
         this.quantAttr = "Winner and\nseat share";
         this.currentAggregationIdx = 1;
         this.aggregationAttrs = ["party_major_group_cleaned", "province", "occupation_category"];
         this.changeAggregationAttrCallback = _changeAggregationAttrCallback;
+        this.changeSelectedGroupCallback = _changeSelectedGroupCallback;
         this.initVis();
     }
 
@@ -75,6 +78,12 @@ export class Barplot {
             vis.selectedFeds = null;
         }
         vis.updateVis();
+    }
+
+    changeSelectedGroup(selectedGroup) {
+        let vis = this;
+        vis.selectedGroup = selectedGroup;
+        vis.renderVis();
     }
 
     initVis() {
@@ -172,11 +181,11 @@ export class Barplot {
             .attr('y', d => vis.yScale(d.val))
             .attr('width', vis.xSub.bandwidth())
             .attr('height', d => vis.yScale(0) - vis.yScale(d.val))
-            .attr('fill', d => vis.colourScale(d.group));
+            .attr('fill', d => vis.colourScale(d.group))
+            .classed('active', d => d.group === vis.selectedGroup);
 
         vis.chart.selectAll('rect')
             .on("mousemove", (event, d) => {
-                console.log(d.longname);
                 d3.select('#map-tooltip')
                     .style('display', 'block')
                     .style('right', (window.innerWidth - event.pageX + vis.config.tooltipPadding) + 'px')
@@ -186,12 +195,15 @@ export class Barplot {
                     .html(`<div class="tooltip-title">${vis.aoiIsPercent ? `${(Math.round(d.val * 1000) / 10).toFixed(1)}%` : d.val}</div>
                            <div class="tooltip-body">${d.longname === null ? '' : d.longname}</div>`);
                 })
-            .on('mouseleave', () => { d3.select('#map-tooltip').style('display', 'none'); });
+            .on('mouseleave', () => { d3.select('#map-tooltip').style('display', 'none'); })
+            .on("click", (_, d) => {
+                if (d.group !== vis.selectedGroup) {
+                    vis.changeSelectedGroupCallback(d.group);
+                }
+            });
 
         vis.chart.selectAll('.tick')
-            .on("click", (event, d) => {
-                vis.changeAggregationAttrCallback();
-            });
+            .on("click", vis.changeAggregationAttrCallback);
     }
 
     filterCandidates() {

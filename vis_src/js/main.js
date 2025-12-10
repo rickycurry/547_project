@@ -63,8 +63,8 @@ async function main() {
     choroplethLower = new ChoroplethMap({parentElement: 'choroplethdiv-lower'}, ros, candidates, partiesMajor, partiesRaw, mapZoomed, parliamentROMapping);
     timelineSliderUpper = new TimelineSlider({parentElement: 'sliderdiv-upper', isUpper: true, margin: {top: 40, right: 70, bottom: 5, left: 78}, initializeMin: true}, candidates, changeParliament.bind(choroplethUpper));
     timelineSliderLower = new TimelineSlider({parentElement: 'sliderdiv-lower', isUpper: false, margin: {top: 5, right: 70, bottom: 30, left: 78}}, candidates, changeParliament.bind(choroplethLower));
-    barPlotUpper = new Barplot({parentElement: 'barplotdiv-upper', currentParliament: 1}, candidates, partiesMajor, occupations, provinces, changeAggregationAttr);
-    barPlotLower = new Barplot({parentElement: 'barplotdiv-lower', currentParliament: 44, isLower: true}, candidates, partiesMajor, occupations, provinces, changeAggregationAttr);
+    barPlotUpper = new Barplot({parentElement: 'barplotdiv-upper', currentParliament: 1}, candidates, partiesMajor, occupations, provinces, changeAggregationAttr, changeSelectedGroup);
+    barPlotLower = new Barplot({parentElement: 'barplotdiv-lower', currentParliament: 44, isLower: true}, candidates, partiesMajor, occupations, provinces, changeAggregationAttr, changeSelectedGroup);
     heatmap = new Heatmap({parentElement: 'heatmapdiv'}, candidates, partiesMajor, partiesRaw, changeAOI);
     selector = new GeoSelector({parentElement: 'selectordiv'}, fedHierarchy, geoSelectionChanged);
 }
@@ -87,6 +87,15 @@ function changeParliament(newParliament, isUpper) {
 function changeAggregationAttr() {
     barPlotLower.changeAggregationAttr();
     barPlotUpper.changeAggregationAttr();
+}
+
+function changeSelectedGroup(selectedGroup) {
+    console.log('ncie')
+    barPlotUpper.changeSelectedGroup(selectedGroup);
+    barPlotLower.changeSelectedGroup(selectedGroup);
+    // choroplethUpper.changeSelectedGroup(selectedGroup);
+    // choroplethLower.changeSelectedGroup(selectedGroup);
+    // heatmap.changeSelectedGroup(selectedGroup);
 }
 
 function changeAOI(aoiString) {
