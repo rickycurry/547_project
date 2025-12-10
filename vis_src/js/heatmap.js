@@ -183,6 +183,7 @@ export class Heatmap {
                     .style('left', (event.pageX + vis.config.tooltipPadding) + 'px')
                     .style('top', (event.pageY + vis.config.tooltipPadding) + 'px')
                     .style('bottom', '')
+                    .style('right', '')
                     .html(`<div class="tooltip-body">${vis.tooltipBodyFns.get(d.rowLabel)(d)}</div>`);
                 })
             .on('mouseleave', () => { d3.select('#map-tooltip').style('display', 'none'); });

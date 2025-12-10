@@ -184,6 +184,7 @@ export class ChoroplethMap {
                     .style('left', (event.pageX + vis.config.tooltipPadding) + 'px')
                     .style('bottom', (window.innerHeight - event.pageY + vis.config.tooltipPadding) + 'px')
                     .style('top', '')
+                    .style('right', '')
                     .html(`<div class="tooltip-title">${d.properties.fedname}</div>
                            <div class="tooltip-body">${vis.tooltipBodyFn(d)}`);
             })

@@ -15,6 +15,7 @@ export class Barplot {
         this.config = {
             parentElement: _config.parentElement,
             margin: _config.margin || {top: 10, right: 10, bottom: 80, left: 35},
+            tooltipPadding: _config.tooltipPadding || 10,
             currentParliament: _config.currentParliament || 1,
             isLower: _config.isLower || false,
         }
@@ -130,46 +131,7 @@ export class Barplot {
             .attr("class", "y-axis");
 
         if (vis.config.isLower) {
-            vis.legendSvg = d3.select(`#${vis.config.parentElement}`)
-                .append('svg')
-                .classed('legend', true)
-                .attr('width', '130px')
-                .attr('height', '55px')
-                .style('left', '350px')
-                .style('top', `-290px`);
-
-            vis.legendG = vis.legendSvg.append('g')
-                .attr('width', '100%')
-                .classed('legend-g', true);
-
-            // semi-transparent background
-            vis.legendG.append('rect')
-                .attr('width', '100%')
-                .attr('height', '100%')
-                .attr('fill', '#eee')
-                .attr('fill-opacity', '45%');
-
-            vis.legendForeground = vis.legendG.append('g')
-                .attr('width', '100%')
-                .attr('height', '100%')
-                .classed('legend-entry', true);
-            vis.legendForeground.append('rect')
-                .attr('y', '11')
-                .attr('fill', vis.colourScale('all'));
-            vis.legendForeground.append('rect')
-                .attr('y', '31')
-                .attr('fill', vis.colourScale('win'));
-            vis.legendForeground.selectAll('rect')
-                .attr('x', '15')
-                .attr('height', '15')
-                .attr('width', '15');
-            vis.legendForeground.append('text')
-                .attr('dy', '23')
-                .text('All candidates');
-            vis.legendForeground.append('text')
-                .attr('dy', '43')
-                .text('Election winners');
-            vis.legendForeground.selectAll('text').attr('dx', '36')
+            vis.renderLegend();
         }
 
         vis.updateVis();
@@ -217,8 +179,10 @@ export class Barplot {
                 console.log(d.longname);
                 d3.select('#map-tooltip')
                     .style('display', 'block')
-                    .style('left', (event.pageX + vis.config.tooltipPadding) + 'px')
+                    .style('right', (window.innerWidth - event.pageX + vis.config.tooltipPadding) + 'px')
                     .style('bottom', (window.innerHeight - event.pageY + vis.config.tooltipPadding) + 'px')
+                    .style('left', '')
+                    .style('top', '')
                     .html(`<div class="tooltip-title">${vis.aoiIsPercent ? `${(Math.round(d.val * 1000) / 10).toFixed(1)}%` : d.val}</div>
                            <div class="tooltip-body">${d.longname === null ? '' : d.longname}</div>`);
                 })
@@ -236,6 +200,50 @@ export class Barplot {
         if (vis.selectedFeds !== null) {
             vis.filteredCandidates = vis.filteredCandidates.filter(d => vis.selectedFeds.has(d.fed_id));
         }
+    }
+
+    renderLegend() {
+        let vis = this;
+        vis.legendSvg = d3.select(`#${vis.config.parentElement}`)
+            .append('svg')
+            .classed('legend', true)
+            .attr('width', '130px')
+            .attr('height', '55px')
+            .style('left', '350px')
+            .style('top', `-290px`);
+
+        vis.legendG = vis.legendSvg.append('g')
+            .attr('width', '100%')
+            .classed('legend-g', true);
+
+        // semi-transparent background
+        vis.legendG.append('rect')
+            .attr('width', '100%')
+            .attr('height', '100%')
+            .attr('fill', '#eee')
+            .attr('fill-opacity', '45%');
+
+        vis.legendForeground = vis.legendG.append('g')
+            .attr('width', '100%')
+            .attr('height', '100%')
+            .classed('legend-entry', true);
+        vis.legendForeground.append('rect')
+            .attr('y', '11')
+            .attr('fill', vis.colourScale('all'));
+        vis.legendForeground.append('rect')
+            .attr('y', '31')
+            .attr('fill', vis.colourScale('win'));
+        vis.legendForeground.selectAll('rect')
+            .attr('x', '15')
+            .attr('height', '15')
+            .attr('width', '15');
+        vis.legendForeground.append('text')
+            .attr('dy', '23')
+            .text('All candidates');
+        vis.legendForeground.append('text')
+            .attr('dy', '43')
+            .text('Election winners');
+        vis.legendForeground.selectAll('text').attr('dx', '36')
     }
 
     initValueMap() {

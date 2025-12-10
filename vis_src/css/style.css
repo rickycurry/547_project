@@ -77,7 +77,7 @@ path.selected, path:hover {
     fill-opacity: 100%;
 }
 
-/* Map legend */
+/* Legend */
 .legend {
     position: relative;
     z-index: 1;
@@ -103,10 +103,6 @@ path.selected, path:hover {
 }
 
 /* Heatmap */
-/* rect {
-    stroke: #aaa;
-    stroke-width: 0.4pt;
-} */
 .cell {
     stroke: #555;
     stroke-width: 0.6pt;
