@@ -64,7 +64,7 @@ async function main() {
     timelineSliderUpper = new TimelineSlider({parentElement: 'sliderdiv-upper', isUpper: true, margin: {top: 40, right: 70, bottom: 5, left: 78}, initializeMin: true}, candidates, changeParliament.bind(choroplethUpper));
     timelineSliderLower = new TimelineSlider({parentElement: 'sliderdiv-lower', isUpper: false, margin: {top: 5, right: 70, bottom: 30, left: 78}}, candidates, changeParliament.bind(choroplethLower));
     barPlotUpper = new Barplot({parentElement: 'barplotdiv-upper', currentParliament: 1}, candidates, partiesMajor, occupations, provinces, changeAggregationAttr);
-    barPlotLower = new Barplot({parentElement: 'barplotdiv-lower', currentParliament: 44}, candidates, partiesMajor, occupations, provinces, changeAggregationAttr);
+    barPlotLower = new Barplot({parentElement: 'barplotdiv-lower', currentParliament: 44, isLower: true}, candidates, partiesMajor, occupations, provinces, changeAggregationAttr);
     heatmap = new Heatmap({parentElement: 'heatmapdiv'}, candidates, partiesMajor, partiesRaw, changeAOI);
     selector = new GeoSelector({parentElement: 'selectordiv'}, fedHierarchy, geoSelectionChanged);
 }
