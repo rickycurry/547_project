@@ -32,6 +32,7 @@ export class ChoroplethMap {
         _rawPartiesLookup.forEach(d => this.rawPartiesLookup.set(d.id, d.party));
         this.mapZoomCallback = _mapZoomCallback;
         this.selectedFeds = new Set();
+        this.selectedGroup = "all";
 
         this.projection = d3.geoConicConformal()
             .parallels([30, 30])
@@ -58,6 +59,13 @@ export class ChoroplethMap {
         let vis = this;
         vis.currentParliament = newParliament;
         vis.selectedFeds = newSelectedGeography;
+        vis.updateVis();
+    }
+
+    // one of "all" or "win"
+    changeSelectedGroup(selectedGroup) {
+        let vis = this;
+        vis.selectedGroup = selectedGroup;
         vis.updateVis();
     }
 
@@ -303,11 +311,12 @@ export class ChoroplethMap {
 
     getLegendTitle() {
         let vis = this;
+        const isCandidateMode = vis.selectedGroup === "all";
         switch (vis.quantAttr) {
             case "Non-male": return "Percent \nnon-male";
             case "Indigenous": return "Percent \nindigenous";
-            case "Age": return "Average \ncandidate age";
-            case "Count": return "Number of \ncandidates";
+            case "Age": return `Average \n${isCandidateMode ? 'candidate' : 'winner'} age`;
+            case "Count": return `Number of \n${isCandidateMode ? 'candidates' : 'winners'}`;
             case "Vote share": return "Victory\nmargin"
             default: return "Winning \nparty"; 
         }
@@ -317,6 +326,8 @@ export class ChoroplethMap {
         let vis = this;
 
         let attributeIsProportion = false;
+        const isCandidateMode = vis.selectedGroup === "all";
+        const possiblyFilteredByGroup = isCandidateMode ? vis.filteredCandidates : vis.filteredCandidates.filter(d => d.elected);
         switch (vis.quantAttr) {
             case "Vote share":
                 vis.valueMap = d3.rollup(vis.filteredCandidates, v => {
@@ -342,15 +353,15 @@ export class ChoroplethMap {
                 break;
 
             case "Non-male":
-                vis.valueMap = d3.rollup(vis.filteredCandidates, v => {
+                vis.valueMap = d3.rollup(possiblyFilteredByGroup, v => {
                         const nonMaleCount = v.filter(d => d.gender !== 'M').length;
                         return nonMaleCount / v.length;
                     },
                     d => d.fed_id);
                 vis.tooltipBodyFn = d => {
                     const fedIdInt = parseInt(d.properties.id);
-                    const fedCandidates = vis.filteredCandidates.filter(c => c.fed_id === fedIdInt);
-                    const percentNonMale = `${Math.round(vis.valueMap.get(fedIdInt) * 100)}% of candidates are non-male:`
+                    const fedCandidates = possiblyFilteredByGroup.filter(c => c.fed_id === fedIdInt);
+                    const percentNonMale = `${Math.round(vis.valueMap.get(fedIdInt) * 100)}% of ${isCandidateMode ? 'candidates' : 'winners'} are non-male:`
                     const candidateStrings = fedCandidates.map(c => `${c.gender !== 'M' ? '<b>' : ''}${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)}) — ${c.gender}${c.gender !== 'M' ? '</b>' : ''}`);
                     return percentNonMale + '\n' + candidateStrings.join('\n');
                 };
@@ -358,15 +369,15 @@ export class ChoroplethMap {
                 break;
                 
             case "Indigenous":
-                vis.valueMap = d3.rollup(vis.filteredCandidates, v => {
+                vis.valueMap = d3.rollup(possiblyFilteredByGroup, v => {
                         const indigenousCount = v.filter(d => d.indigenousorigins === 1).length;
                         return indigenousCount / v.length;
                     },
                     d => d.fed_id);
                 vis.tooltipBodyFn = d => {
                     const fedIdInt = parseInt(d.properties.id);
-                    const fedCandidates = vis.filteredCandidates.filter(c => c.fed_id === fedIdInt);
-                    const percentIndigenous = `${Math.round(vis.valueMap.get(fedIdInt) * 100)}% of candidates have indigenous origins:`
+                    const fedCandidates = possiblyFilteredByGroup.filter(c => c.fed_id === fedIdInt);
+                    const percentIndigenous = `${Math.round(vis.valueMap.get(fedIdInt) * 100)}% of ${isCandidateMode ? 'candidates' : 'winners'} have indigenous origins:`
                     const candidateStrings = fedCandidates.map(c => `${c.indigenousorigins ? '<b>' : ''}${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)})${c.indigenousorigins ? '</b>' : ''}`);
                     return percentIndigenous + '\n' + candidateStrings.join('\n');
                 };
@@ -374,24 +385,24 @@ export class ChoroplethMap {
                 break;
 
             case "Age":
-                vis.valueMap = d3.rollup(vis.filteredCandidates, v => d3.mean(v, d => d.age_at_election), d => d.fed_id);
+                vis.valueMap = d3.rollup(possiblyFilteredByGroup, v => d3.mean(v, d => d.age_at_election), d => d.fed_id);
                 vis.tooltipBodyFn = d => {
                     // NOTE: we basically only have age data for winners, not all candidates!
                     const fedIdInt = parseInt(d.properties.id);
-                    const fedCandidates = vis.filteredCandidates.filter(c => c.fed_id === fedIdInt);
+                    const fedCandidates = possiblyFilteredByGroup.filter(c => c.fed_id === fedIdInt);
                     const averageAge = Math.round(vis.valueMap.get(fedIdInt))
-                    const averageAgeStr = `Average age of candidates: ${isNaN(averageAge) ? 'unknown' : averageAge}`;
+                    const averageAgeStr = `Average age of ${isCandidateMode ? 'candidates' : 'winners'}: ${isNaN(averageAge) ? 'unknown' : averageAge}`;
                     const candidateStrings = fedCandidates.map(c => `${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)}) — ${c.age_at_election === null ? "unknown" : c.age_at_election}`);
                     return averageAgeStr + '\n' + candidateStrings.join('\n');
                 };
                 break;
 
             case "Count":
-                vis.valueMap = d3.rollup(vis.filteredCandidates, v => v.length, d => d.fed_id);
+                vis.valueMap = d3.rollup(possiblyFilteredByGroup, v => v.length, d => d.fed_id);
                 vis.tooltipBodyFn = d => {
                     const fedIdInt = parseInt(d.properties.id);
-                    const fedCandidates = vis.filteredCandidates.filter(c => c.fed_id === fedIdInt);
-                    const candidateCountStr = `${fedCandidates.length} candidate(s)\n`
+                    const fedCandidates = possiblyFilteredByGroup.filter(c => c.fed_id === fedIdInt);
+                    const candidateCountStr = `${fedCandidates.length} ${isCandidateMode ? 'candidate' : 'winner'}(s)\n`
                     const candidateStrings = fedCandidates.map(c => `${c.elected ? '<b>' : ''}${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)})${c.elected ? '</b>' : ''}`);
                     return candidateCountStr + candidateStrings.join('\n');
                 };

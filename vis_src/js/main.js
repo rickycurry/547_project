@@ -93,8 +93,8 @@ function changeSelectedGroup(selectedGroup) {
     console.log('ncie')
     barPlotUpper.changeSelectedGroup(selectedGroup);
     barPlotLower.changeSelectedGroup(selectedGroup);
-    // choroplethUpper.changeSelectedGroup(selectedGroup);
-    // choroplethLower.changeSelectedGroup(selectedGroup);
+    choroplethUpper.changeSelectedGroup(selectedGroup);
+    choroplethLower.changeSelectedGroup(selectedGroup);
     // heatmap.changeSelectedGroup(selectedGroup);
 }
 
