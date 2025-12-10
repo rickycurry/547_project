@@ -30,6 +30,7 @@ export class Heatmap {
         this.rowLabels = ['Winner and\nseat share', 'Vote share', 'Non-male', 'Indigenous', 'Age', 'Count'];
         this.selectedRowLabel = this.rowLabels[0];
         this.selectedParliaments = new Set([1, 44]);
+        this.selectedGroup = "all";
         _rawPartiesLookup.forEach(d => this.rawPartiesLookup.set(d.id, d.party));
 
         this.changeAOICallback = _changeAOICallback;
@@ -95,6 +96,13 @@ export class Heatmap {
         let vis = this;
         vis.selectedParliaments = selectedParliaments;
         vis.renderVis();
+    }
+
+    // one of "all" or "win"
+    changeSelectedGroup(selectedGroup) {
+        let vis = this;
+        vis.selectedGroup = selectedGroup;
+        vis.updateVis();
     }
 
     updateVis() {
@@ -167,7 +175,6 @@ export class Heatmap {
                         }
                         return `${Math.round(domain[0])}–${Math.round(domain[1])}`
                     });
-
             });
 
 
@@ -203,6 +210,9 @@ export class Heatmap {
         vis.data = [];
         vis.colourScales = new Map();
         let rowIdx = 0;
+
+        const isCandidateMode = vis.selectedGroup === "all";
+        const possiblyFilteredByGroup = isCandidateMode ? vis.filteredCandidates : vis.filteredCandidates.filter(d => d.elected);
 
         const winnerAndSeatShare = d3.rollups(vis.filteredCandidates, D => {
                 const seatsByParty = d3.rollups(D.filter(d => d.elected), E => E.length, d => d.party_major_group_cleaned);
@@ -255,28 +265,28 @@ export class Heatmap {
             return partyStrings.join('\n');
         });
 
-        const nonMale = d3.rollups(vis.filteredCandidates, 
+        const nonMale = d3.rollups(possiblyFilteredByGroup, 
                                    D => D.filter(d => d.gender !== 'M').length / D.length,
                                    d => d.parliament);
         nonMale.forEach(d => vis.data.push(makeDataEntry(d, vis.rowLabels[rowIdx])));
         vis.colourScales.set(vis.rowLabels[rowIdx], vis.makeSequentialScale(nonMale));
         vis.tooltipBodyFns.set(vis.rowLabels[rowIdx++], d => `${(100 * d.val).toFixed(1)}%`);
 
-        const indigenous = d3.rollups(vis.filteredCandidates, 
+        const indigenous = d3.rollups(possiblyFilteredByGroup, 
                                       D => D.filter(d => d.indigenousorigins === 1).length / D.length,
                                       d => d.parliament);
         indigenous.forEach(d => vis.data.push(makeDataEntry(d, vis.rowLabels[rowIdx])));
         vis.colourScales.set(vis.rowLabels[rowIdx], vis.makeSequentialScale(indigenous));    
         vis.tooltipBodyFns.set(vis.rowLabels[rowIdx++], d => `${(100 * d.val).toFixed(1)}%`);
 
-        const age = d3.rollups(vis.filteredCandidates, 
+        const age = d3.rollups(possiblyFilteredByGroup, 
                                D => d3.mean(D, d => d.age_at_election),
                                d => d.parliament);
         age.forEach(d => vis.data.push(makeDataEntry(d, vis.rowLabels[rowIdx])));
         vis.colourScales.set(vis.rowLabels[rowIdx], vis.makeSequentialScale(age));    
         vis.tooltipBodyFns.set(vis.rowLabels[rowIdx++], d => d.val.toFixed(1));
 
-        const count = d3.rollups(vis.filteredCandidates, D => {
+        const count = d3.rollups(possiblyFilteredByGroup, D => {
                 // D contains all candidates for a given election.
                 // We want to now group by FED and take the mean (ignoring FEDs with 0 candidates).
                 const fedCandidateCounts = d3.rollups(D, 

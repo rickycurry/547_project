@@ -90,12 +90,11 @@ function changeAggregationAttr() {
 }
 
 function changeSelectedGroup(selectedGroup) {
-    console.log('ncie')
     barPlotUpper.changeSelectedGroup(selectedGroup);
     barPlotLower.changeSelectedGroup(selectedGroup);
     choroplethUpper.changeSelectedGroup(selectedGroup);
     choroplethLower.changeSelectedGroup(selectedGroup);
-    // heatmap.changeSelectedGroup(selectedGroup);
+    heatmap.changeSelectedGroup(selectedGroup);
 }
 
 function changeAOI(aoiString) {
