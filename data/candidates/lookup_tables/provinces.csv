@@ -1,14 +1,14 @@
-province,id
-Alberta,0
-British Columbia,1
-Manitoba,2
-New Brunswick,3
-Newfoundland and Labrador,4
-Northwest Territories,5
-Nova Scotia,6
-Nunavut,7
-Ontario,8
-Prince Edward Island,9
-Quebec,10
-Saskatchewan,11
-Yukon,12
+province,longname,id
+AB,Alberta,0
+BC,British Columbia,1
+MB,Manitoba,2
+NB,New Brunswick,3
+NL,Newfoundland,4
+NT,Northwest Territories,5
+NS,Nova Scotia,6
+NU,Nunavut,7
+ON,Ontario,8
+PE,Prince Edward Island,9
+QC,Quebec,10
+SK,Saskatchewan,11
+YT,Yukon,12

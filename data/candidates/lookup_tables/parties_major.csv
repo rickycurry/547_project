@@ -1,9 +1,9 @@
-colour,party,id
-#b4e1ed,Bloc,0
-#f89922,CCF NDP,1
-#6f9fdf,Conservative,2
-#dcdcdc,Independent,3
-#ea585b,Liberal,4
-#6666ff,Progressive,5
-#31b38c,Reform Alliance,6
-#898989,Third Party,7
+colour,party,longname,id
+#b4e1ed,Bloc,,0
+#f89922,CCF NDP,,1
+#6f9fdf,Conservative,,2
+#dcdcdc,Independent,,3
+#ea585b,Liberal,,4
+#6666ff,Progressive,,5
+#31b38c,Reform Alliance,,6
+#898989,Third Party,,7

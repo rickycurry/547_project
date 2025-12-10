@@ -1,12 +1,12 @@
-occupation,id
-"Business, finance and administration occupations",0
-Health occupations,1
-Management occupations,2
-Members of Parliament,3
-Natural and applied sciences and related occupations,4
-"Natural resources, agriculture and related production occupations",5
-"Occupations in art, culture, recreation and sport",6
-"Occupations in education, law and social, community and government services",7
-Occupations in manufacturing and utilities,8
-Sales and service occupations,9
-"Trades, transport and equipment operators and related occupations",10
+occupation,longname,id
+BFA,"Business, finance and administration occupations",0
+H,Health occupations,1
+Ma,Management occupations,2
+MP,Members of Parliament,3
+Sc,Natural and applied sciences and related occupations,4
+Re,"Natural resources, agriculture and related production occupations",5
+C&R,"Occupations in art, culture, recreation and sport",6
+ELG,"Occupations in education, law and social, community and government services",7
+MU,Occupations in manufacturing and utilities,8
+S&S,Sales and service occupations,9
+Tr,"Trades, transport and equipment operators and related occupations",10

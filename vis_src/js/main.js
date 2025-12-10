@@ -63,33 +63,30 @@ async function main() {
     choroplethLower = new ChoroplethMap({parentElement: 'choroplethdiv-lower'}, ros, candidates, partiesMajor, partiesRaw, mapZoomed, parliamentROMapping);
     timelineSliderUpper = new TimelineSlider({parentElement: 'sliderdiv-upper', isUpper: true, margin: {top: 40, right: 70, bottom: 5, left: 78}, initializeMin: true}, candidates, changeParliament.bind(choroplethUpper));
     timelineSliderLower = new TimelineSlider({parentElement: 'sliderdiv-lower', isUpper: false, margin: {top: 5, right: 70, bottom: 30, left: 78}}, candidates, changeParliament.bind(choroplethLower));
-    barPlotUpper = new Barplot({parentElement: 'barplotdiv-upper', currentParliament: 1}, candidates, partiesMajor, occupations, provinces);
-    barPlotLower = new Barplot({parentElement: 'barplotdiv-lower', currentParliament: 44}, candidates, partiesMajor, occupations, provinces);
+    barPlotUpper = new Barplot({parentElement: 'barplotdiv-upper', currentParliament: 1}, candidates, partiesMajor, occupations, provinces, changeAggregationAttr);
+    barPlotLower = new Barplot({parentElement: 'barplotdiv-lower', currentParliament: 44}, candidates, partiesMajor, occupations, provinces, changeAggregationAttr);
     heatmap = new Heatmap({parentElement: 'heatmapdiv'}, candidates, partiesMajor, partiesRaw, changeAOI);
     selector = new GeoSelector({parentElement: 'selectordiv'}, fedHierarchy, geoSelectionChanged);
 }
 
 main();
 
-// function changeParliament(newParliament) {
-//     const historicSelectedGeography = transformSelectedGeoToHistoricRO(parliamentROMapping.get(newParliament));
-//     const selectedParliaments = new Set([timelineSliderUpper.currentParliament, timelineSliderLower.currentParliament]);
-//     heatmap.changeParliaments(selectedParliaments);
-//     // barPlotLower.changeParliament
-//     this.changeParliament(newParliament, historicSelectedGeography);
-// }
-
 function changeParliament(newParliament, isUpper) {
     const historicSelectedGeography = transformSelectedGeoToHistoricRO(parliamentROMapping.get(newParliament));
     const selectedParliaments = new Set([timelineSliderUpper.currentParliament, timelineSliderLower.currentParliament]);
     heatmap.changeParliaments(selectedParliaments);
     if (isUpper) {
-        barPlotUpper.changeParliament(newParliament, historicSelectedGeography);
+        barPlotUpper.changeParliament(newParliament, historicSelectedGeography, selectedGeography.size > 0);
         choroplethUpper.changeParliament(newParliament, historicSelectedGeography);
     } else {
-        barPlotLower.changeParliament(newParliament, historicSelectedGeography);
+        barPlotLower.changeParliament(newParliament, historicSelectedGeography, selectedGeography.size > 0);
         choroplethLower.changeParliament(newParliament, historicSelectedGeography);
     }
+}
+
+function changeAggregationAttr() {
+    barPlotLower.changeAggregationAttr();
+    barPlotUpper.changeAggregationAttr();
 }
 
 function changeAOI(aoiString) {
@@ -112,8 +109,8 @@ function geoSelectionChanged(geography, wasAdded) {
     const lowerTransformedGeo = transformSelectedGeoToHistoricRO(parliamentROMapping.get(choroplethLower.currentParliament))
     choroplethUpper.changeSelectedFEDs(upperTransformedGeo);
     choroplethLower.changeSelectedFEDs(lowerTransformedGeo);
-    barPlotUpper.changeSelectedFEDs(upperTransformedGeo);
-    barPlotLower.changeSelectedFEDs(lowerTransformedGeo);
+    barPlotUpper.changeSelectedFEDs(upperTransformedGeo, selectedGeography.size > 0);
+    barPlotLower.changeSelectedFEDs(lowerTransformedGeo, selectedGeography.size > 0);
     // Also send all the ROs' transformed selected geography to the heatmap.
     if (selectedGeography.size === 0) {
         heatmap.changeSelectedGeography(null);
