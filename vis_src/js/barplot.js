@@ -40,7 +40,7 @@ export class Barplot {
     changeAOI(attr) {
         let vis = this;
         vis.quantAttr = attr;
-        if (attr === "Non-male" || attr === "Indigenous" || attr === "Vote share") {
+        if (attr === "Non-male" || attr === "Indigenous" || attr === "LGBTQ2S+" || attr === "Vote share") {
             vis.aoiIsPercent = true;
             vis.yAxis.tickFormat(d3.format(".0%"));
         } else {
@@ -289,6 +289,15 @@ export class Barplot {
                     return {
                         all: D.filter(d => d.indigenousorigins).length / D.length, 
                         win: electedOnly.filter(d => d.indigenousorigins).length / electedOnly.length
+                    };
+                }, d => d[aggregationAttr]);
+                break;
+            case "LGBTQ2S+":
+                vis.data = d3.rollups(vis.filteredCandidates, D => {
+                    const electedOnly = D.filter(d => d.elected);
+                    return {
+                        all: D.filter(d => d.lgbtq2_out).length / D.length, 
+                        win: electedOnly.filter(d => d.lgbtq2_out).length / electedOnly.length
                     };
                 }, d => d[aggregationAttr]);
                 break;

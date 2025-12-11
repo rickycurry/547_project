@@ -27,7 +27,7 @@ export class Heatmap {
         this.majorPartiesLookup = _majorPartiesLookup;
         this.rawPartiesLookup = new Map();
         this.selectedGeoByRo = null;
-        this.rowLabels = ['Winner and\nseat share', 'Vote share', 'Non-male', 'Indigenous', 'Age', 'Count'];
+        this.rowLabels = ['Winner and\nseat share', 'Vote share', 'Non-male', 'Indigenous', 'LGBTQ2S+', 'Age', 'Count'];
         this.selectedRowLabel = this.rowLabels[0];
         this.selectedParliaments = new Set([1, 44]);
         this.selectedGroup = "all";
@@ -121,6 +121,7 @@ export class Heatmap {
         }
     }
 
+    // Implementation largely borrowed from https://d3-graph-gallery.com/graph/heatmap_style.html
     renderVis() {
         let vis = this;
         // Height-encoded cells ('bars')
@@ -187,10 +188,12 @@ export class Heatmap {
             .on("mousemove", (event, d) => {
                 d3.select('#map-tooltip')
                     .style('display', 'block')
-                    .style('left', (event.pageX + vis.config.tooltipPadding) + 'px')
+                    .style('right', (window.innerWidth - event.pageX + vis.config.tooltipPadding) + 'px')
+                    // .style('left', (event.pageX + vis.config.tooltipPadding) + 'px')
+                    .style('left', '')
                     .style('top', (event.pageY + vis.config.tooltipPadding) + 'px')
                     .style('bottom', '')
-                    .style('right', '')
+                    // .style('right', '')
                     .html(`<div class="tooltip-body">${vis.tooltipBodyFns.get(d.rowLabel)(d)}</div>`);
                 })
             .on('mouseleave', () => { d3.select('#map-tooltip').style('display', 'none'); });
@@ -277,6 +280,13 @@ export class Heatmap {
                                       d => d.parliament);
         indigenous.forEach(d => vis.data.push(makeDataEntry(d, vis.rowLabels[rowIdx])));
         vis.colourScales.set(vis.rowLabels[rowIdx], vis.makeSequentialScale(indigenous));    
+        vis.tooltipBodyFns.set(vis.rowLabels[rowIdx++], d => `${(100 * d.val).toFixed(1)}%`);
+
+        const lgbtq2s = d3.rollups(possiblyFilteredByGroup, 
+                                      D => D.filter(d => d.lgbtq2_out === 1).length / D.length,
+                                      d => d.parliament);
+        lgbtq2s.forEach(d => vis.data.push(makeDataEntry(d, vis.rowLabels[rowIdx])));
+        vis.colourScales.set(vis.rowLabels[rowIdx], vis.makeSequentialScale(lgbtq2s));    
         vis.tooltipBodyFns.set(vis.rowLabels[rowIdx++], d => `${(100 * d.val).toFixed(1)}%`);
 
         const age = d3.rollups(possiblyFilteredByGroup, 

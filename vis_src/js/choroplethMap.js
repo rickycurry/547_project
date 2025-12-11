@@ -317,7 +317,8 @@ export class ChoroplethMap {
             case "Indigenous": return "Percent \nindigenous";
             case "Age": return `Average \n${isCandidateMode ? 'candidate' : 'winner'} age`;
             case "Count": return `Number of \n${isCandidateMode ? 'candidates' : 'winners'}`;
-            case "Vote share": return "Victory\nmargin"
+            case "Vote share": return "Victory\nmargin";
+            case "LGBTQ2S+": return "Percent \nLGBTQ2S+";
             default: return "Winning \nparty"; 
         }
     }
@@ -380,6 +381,22 @@ export class ChoroplethMap {
                     const percentIndigenous = `${Math.round(vis.valueMap.get(fedIdInt) * 100)}% of ${isCandidateMode ? 'candidates' : 'winners'} have indigenous origins:`
                     const candidateStrings = fedCandidates.map(c => `${c.indigenousorigins ? '<b>' : ''}${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)})${c.indigenousorigins ? '</b>' : ''}`);
                     return percentIndigenous + '\n' + candidateStrings.join('\n');
+                };
+                attributeIsProportion = true;
+                break;
+
+            case "LGBTQ2S+":
+                vis.valueMap = d3.rollup(possiblyFilteredByGroup, v => {
+                        const lgbtqCount = v.filter(d => d.lgbtq2_out === 1).length;
+                        return lgbtqCount / v.length;
+                    },
+                    d => d.fed_id);
+                vis.tooltipBodyFn = d => {
+                    const fedIdInt = parseInt(d.properties.id);
+                    const fedCandidates = possiblyFilteredByGroup.filter(c => c.fed_id === fedIdInt);
+                    const percentLgbtq = `${Math.round(vis.valueMap.get(fedIdInt) * 100)}% of ${isCandidateMode ? 'candidates' : 'winners'} are openly LGBTQ2S+:`
+                    const candidateStrings = fedCandidates.map(c => `${c.lgbtq2_out ? '<b>' : ''}${c.candidate_name_cleaned} (${this.rawPartiesLookup.get(c.party_raw)})${c.lgbtq2_out ? '</b>' : ''}`);
+                    return percentLgbtq + '\n' + candidateStrings.join('\n');
                 };
                 attributeIsProportion = true;
                 break;
