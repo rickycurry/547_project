@@ -22,13 +22,15 @@ LAST_RO_GEOJSON = ROS_DIR / "ro_2013.geojson"
 # }
 
 # load up the last one to use as our base
-last_geodf = geopandas.read_file(LAST_RO_GEOJSON)
+last_geodf = geopandas.read_file(LAST_RO_GEOJSON).to_crs("EPSG:3348")
 # print(last_geodf.crs)
 overlaps = {}
+BUFFER_VAL = -1000
 for file in ROS_DIR.iterdir():
     if file == LAST_RO_GEOJSON:
         continue
-    current_geodf = geopandas.read_file(file)
+    current_geodf = geopandas.read_file(file).to_crs("EPSG:3348")
+    current_geodf.geometry = current_geodf.geometry.buffer(BUFFER_VAL)
     name = file.name[3:7]
     # print(name)
     other_ro_dict = {}
@@ -38,14 +40,16 @@ for file in ROS_DIR.iterdir():
     # for geo in last_geodf.geometry:
         overlapping_ids = []
         other_ro_dict[row[1]['id']] = overlapping_ids
-        geo_buffered = row[1]['geometry'].buffer(-0.001, )
+        geo_buffered = row[1]['geometry'].buffer(BUFFER_VAL)
+        # geo_buffered = row[1]['geometry']
+
         if geo_buffered.area <= 0:
             # I am dubious
             print(f"warning: geo {row[1]['fedname']} is buffered to 0 size.")
-        overlaps_this_fed = geo_buffered.overlaps(current_geodf.geometry)
+        overlaps_this_fed = geo_buffered.intersects(current_geodf.geometry)
         for i, val in enumerate(overlaps_this_fed):
             if val:
                 overlapping_ids.append(str(current_geodf.iloc[i]['id']))
-    # print(overlaps)
+    print(overlaps)
                 
-json.dump(overlaps, OUT_FILE.open('w'))
+json.dump(overlaps, OUT_FILE.open('w'), indent=2)
