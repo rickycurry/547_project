@@ -75,7 +75,8 @@ export class Heatmap {
             .range([0, vis.height])
             .padding(0.02);
 
-        vis.yAxis = d3.axisLeft(vis.y);
+        vis.yAxis = d3.axisLeft(vis.y)
+            .tickSize(0);
         vis.chart.append("g")
             .call(vis.yAxis);
 
