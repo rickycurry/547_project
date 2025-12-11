@@ -425,7 +425,7 @@ export class ChoroplethMap {
                 };
                 break;
 
-            case "Winner and\nseat share":
+            case "Winner seats":
             default:
                 vis.valueMap = d3.rollup(vis.filteredCandidates, v => {
                         const winners = v.filter(d => d.elected === 1);

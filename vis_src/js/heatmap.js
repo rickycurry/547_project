@@ -27,7 +27,7 @@ export class Heatmap {
         this.majorPartiesLookup = _majorPartiesLookup;
         this.rawPartiesLookup = new Map();
         this.selectedGeoByRo = null;
-        this.rowLabels = ['Winner and\nseat share', 'Vote share', 'Non-male', 'Indigenous', 'LGBTQ2S+', 'Age', 'Count'];
+        this.rowLabels = ['Winner seats', 'Vote share', 'Non-male', 'Indigenous', 'LGBTQ2S+', 'Age', 'Count'];
         this.selectedRowLabel = this.rowLabels[0];
         this.selectedParliaments = new Set([1, 44]);
         this.selectedGroup = "all";

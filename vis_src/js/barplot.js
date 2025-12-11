@@ -29,7 +29,7 @@ export class Barplot {
         this.currentParliament = this.config.currentParliament;
         this.selectedFeds = null;
         this.selectedGroup = 'all';
-        this.quantAttr = "Winner and\nseat share";
+        this.quantAttr = "Winner seats";
         this.currentAggregationIdx = 1;
         this.aggregationAttrs = ["party_major_group_cleaned", "province", "occupation_category"];
         this.changeAggregationAttrCallback = _changeAggregationAttrCallback;
@@ -302,7 +302,7 @@ export class Barplot {
                 }, d => d[aggregationAttr]);
                 break;
             case "Count":
-            case "Winner and\nseat share": 
+            case "Winner seats": 
             default:
                 vis.data = d3.rollups(vis.filteredCandidates, D => {
                     return {all: D.length, win: D.filter(d => d.elected).length};
