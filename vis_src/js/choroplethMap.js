@@ -34,6 +34,7 @@ export class ChoroplethMap {
         this.selectedFeds = new Set();
         this.selectedGroup = "all";
 
+        // Projection rotation numbers come from https://situx.github.io/proj4rdf/data/def/crs/EPSG/0/3348/index.html
         this.projection = d3.geoConicConformal()
             .parallels([30, 30])
             .rotate([91.86, -63.390675]);
